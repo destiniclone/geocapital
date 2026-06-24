@@ -464,6 +464,8 @@ export default function WITWorld() {
   const [copied, setCopied] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [alreadyPlayed, setAlreadyPlayed] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const statsSavedRef = useRef(false);
   const { country, loc } = puzzle;
   const { images, loading: imgLoading } = useWikiImages(loc[0]);
 
@@ -477,7 +479,7 @@ export default function WITWorld() {
     }
   });
 
-  // Check if already played today's puzzle
+  // Check if already played today's puzzle and restore guesses
   useEffect(() => {
     try {
       const now = new Date();
@@ -491,19 +493,24 @@ export default function WITWorld() {
         if (result.won) {
           setWon(true);
           setSubmitted(result.submitted);
+          setGuesses(result.guesses || Array(6).fill(""));
         } else {
           setLost(true);
           setSubmitted(result.submitted);
+          setGuesses(result.guesses || Array(6).fill(""));
         }
+        statsSavedRef.current = true;
       }
     } catch (e) {
       console.error("Error checking played dates:", e);
     }
   }, []);
 
-  // Save stats when game ends
+  // Save stats when game ends (only once)
   useEffect(() => {
-    if (won || lost) {
+    if ((won || lost) && !statsSavedRef.current) {
+      statsSavedRef.current = true;
+      
       const guessCount = submitted.findIndex(s => !s);
       const finalCount = guessCount === -1 ? 6 : guessCount;
       
@@ -518,13 +525,13 @@ export default function WITWorld() {
       setStats(newStats);
       localStorage.setItem("witworld_stats", JSON.stringify(newStats));
       
-      // Mark puzzle as played today
+      // Mark puzzle as played today with guesses
       try {
         const now = new Date();
         const today = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
         const played = localStorage.getItem("witworld_played_dates");
         const playedDates = played ? JSON.parse(played) : {};
-        playedDates[today] = { won, submitted };
+        playedDates[today] = { won, submitted, guesses };
         localStorage.setItem("witworld_played_dates", JSON.stringify(playedDates));
       } catch (e) {
         console.error("Error saving played date:", e);
@@ -539,6 +546,7 @@ export default function WITWorld() {
     newSub[idx] = true;
     setSubmitted(newSub);
     if (guess === country.name) {
+      setShowConfetti(true);
       setWon(true);
     } else if (idx === 5) {
       setLost(true);
@@ -562,7 +570,23 @@ export default function WITWorld() {
   function shareResults() {
     const guessCount = submitted.findIndex(s => !s);
     const finalCount = guessCount === -1 ? 6 : guessCount + 1;
-    const text = `Where In The World? ${finalCount}/6 🎯\nPlay: https://witworld.vercel.app`;
+    
+    // Build hints summary
+    let hintsSummary = "";
+    for (let i = 0; i < finalCount; i++) {
+      if (submitted[i]) {
+        const hint = getHint(i);
+        if (hint) {
+          const dirEmoji = hint.dir === "N" ? "⬆️" : hint.dir === "S" ? "⬇️" : hint.dir === "E" ? "➡️" : hint.dir === "W" ? "⬅️" :
+                          hint.dir === "NE" ? "↗️" : hint.dir === "NW" ? "↖️" : hint.dir === "SE" ? "↘️" : "↙️";
+          hintsSummary += `${dirEmoji} ${hint.percentage}%\n`;
+        } else if (guesses[i] === country.name) {
+          hintsSummary += `✓ Correct!\n`;
+        }
+      }
+    }
+    
+    const text = `Where In The World? ${finalCount}/6 🎯\n\n${hintsSummary}\nPlay: https://witworld.vercel.app`;
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -581,7 +605,45 @@ export default function WITWorld() {
       fontFamily: "'Segoe UI', system-ui, sans-serif", display: "flex",
       flexDirection: "column", alignItems: "center", padding: "24px 16px 48px"
     }}>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes confetti-fall {
+          0% {
+            transform: translateY(-10px) translateX(0) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(100vh) translateX(var(--tx)) rotate(360deg);
+            opacity: 0;
+          }
+        }
+        .confetti {
+          position: fixed;
+          pointer-events: none;
+          animation: confetti-fall 3s ease-out forwards;
+        }
+      `}</style>
+
+      {showConfetti && (
+        <>
+          {Array.from({ length: 50 }).map((_, i) => (
+            <div
+              key={i}
+              className="confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: '-10px',
+                width: `${Math.random() * 10 + 5}px`,
+                height: `${Math.random() * 10 + 5}px`,
+                background: ['#5BCEFA', '#FFFFFF', '#F5A9B8'][Math.floor(Math.random() * 3)],
+                borderRadius: Math.random() > 0.5 ? '50%' : '0',
+                '--tx': `${(Math.random() - 0.5) * 200}px`,
+                animationDelay: `${Math.random() * 0.5}s`,
+              }}
+            />
+          ))}
+        </>
+      )}
 
       <div style={{ textAlign: "center", marginBottom: 28 }}>
         <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900, letterSpacing: -1, color: "#f8f8f2", marginBottom: 4 }}>
