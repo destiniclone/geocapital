@@ -569,7 +569,7 @@ export default function WITWorld() {
     }).catch(() => alert(text));
   }
 
-  const TYPE_LABELS = { capital: "🏛️ Capital", former: "🕰️ Former", city: "🌆 City", unicode: "🏛️ UNESCO" };
+  const TYPE_LABELS = { capital: "🏛️ Capital", former: "🕰️ Former", city: "🌆 Major City/Metro", unicode: "🏛️ UNESCO" };
   const TYPE_COLORS = { capital: "#4ade80", former: "#fb923c", city: "#60a5fa", unicode: "#e879f9" };
 
   const typeColor = TYPE_COLORS[loc[3]];
@@ -591,64 +591,6 @@ export default function WITWorld() {
           Guess the country
         </p>
       </div>
-
-      {showStats && (
-        <div style={{
-          background: "linear-gradient(135deg, #1e1e2e, #16162a)",
-          border: "1px solid #6366f1", borderRadius: 16,
-          overflow: "hidden", marginBottom: 28, width: "100%", maxWidth: 520,
-          padding: "20px 24px"
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#f8f8f2" }}>Your Stats</h2>
-            <button
-              onClick={() => setShowStats(false)}
-              style={{
-                background: "transparent", border: "none", color: "#888", cursor: "pointer", fontSize: 16
-              }}
-            >
-              ✕
-            </button>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-            <div style={{ background: "#111118", padding: 12, borderRadius: 8 }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#6366f1" }}>{stats.games}</div>
-              <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>GAMES PLAYED</div>
-            </div>
-            <div style={{ background: "#111118", padding: 12, borderRadius: 8 }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#4ade80" }}>
-                {stats.games > 0 ? Math.round((stats.wins / stats.games) * 100) : 0}%
-              </div>
-              <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>WIN RATE</div>
-            </div>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#aaa", marginBottom: 8 }}>GUESS DISTRIBUTION</div>
-            {[1, 2, 3, 4, 5, 6].map(i => {
-              const count = stats.guesses[i - 1] || 0;
-              const maxCount = Math.max(...stats.guesses, 1);
-              const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
-              return (
-                <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#aaa", width: 20 }}>{i}</span>
-                  <div style={{
-                    flex: 1, height: 20, background: "#1a1a1a", borderRadius: 4, overflow: "hidden"
-                  }}>
-                    <div style={{
-                      width: `${percent}%`, height: "100%",
-                      background: i === 1 ? "#4ade80" : i <= 3 ? "#60a5fa" : "#fb923c",
-                      transition: "width 0.3s"
-                    }} />
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#aaa", width: 20, textAlign: "right" }}>{count}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
 
       <div style={{
         background: "linear-gradient(135deg, #1e1e2e, #16162a)",
@@ -818,6 +760,64 @@ export default function WITWorld() {
           marginTop: 16, textAlign: "center", color: "#666", fontSize: 13
         }}>
           Come back tomorrow. New game every day.
+        </div>
+      )}
+
+      {showStats && (
+        <div style={{
+          background: "linear-gradient(135deg, #1e1e2e, #16162a)",
+          border: "1px solid #6366f1", borderRadius: 16,
+          overflow: "hidden", marginTop: 28, width: "100%", maxWidth: 520,
+          padding: "20px 24px"
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#f8f8f2" }}>Your Stats</h2>
+            <button
+              onClick={() => setShowStats(false)}
+              style={{
+                background: "transparent", border: "none", color: "#888", cursor: "pointer", fontSize: 16
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+            <div style={{ background: "#111118", padding: 12, borderRadius: 8 }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#6366f1" }}>{stats.games}</div>
+              <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>GAMES PLAYED</div>
+            </div>
+            <div style={{ background: "#111118", padding: 12, borderRadius: 8 }}>
+              <div style={{ fontSize: 24, fontWeight: 900, color: "#4ade80" }}>
+                {stats.games > 0 ? Math.round((stats.wins / stats.games) * 100) : 0}%
+              </div>
+              <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>WIN RATE</div>
+            </div>
+          </div>
+
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#aaa", marginBottom: 8 }}>GUESS DISTRIBUTION</div>
+            {[1, 2, 3, 4, 5, 6].map(i => {
+              const count = stats.guesses[i - 1] || 0;
+              const maxCount = Math.max(...stats.guesses, 1);
+              const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
+              return (
+                <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#aaa", width: 20 }}>{i}</span>
+                  <div style={{
+                    flex: 1, height: 20, background: "#1a1a1a", borderRadius: 4, overflow: "hidden"
+                  }}>
+                    <div style={{
+                      width: `${percent}%`, height: "100%",
+                      background: i === 1 ? "#4ade80" : i <= 3 ? "#60a5fa" : "#fb923c",
+                      transition: "width 0.3s"
+                    }} />
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#aaa", width: 20, textAlign: "right" }}>{count}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
