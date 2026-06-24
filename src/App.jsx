@@ -583,26 +583,13 @@ export default function WITWorld() {
     }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
-      <div style={{ textAlign: "center", marginBottom: 28, width: "100%", maxWidth: 520, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ flex: 1 }} />
-        <div style={{ textAlign: "center", flex: 2 }}>
-          <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900, letterSpacing: -1, color: "#f8f8f2", marginBottom: 4 }}>
-            Where In The World?
-          </h1>
-          <p style={{ margin: 0, color: "#666", fontSize: 13 }}>
-            Guess the country
-          </p>
-        </div>
-        <button
-          onClick={() => setShowStats(!showStats)}
-          style={{
-            flex: 1, textAlign: "right", padding: "8px 12px", borderRadius: 8,
-            background: "transparent", border: "1px solid #333", color: "#888",
-            cursor: "pointer", fontSize: 18, fontWeight: 700
-          }}
-        >
-          📊
-        </button>
+      <div style={{ textAlign: "center", marginBottom: 28 }}>
+        <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900, letterSpacing: -1, color: "#f8f8f2", marginBottom: 4 }}>
+          Where In The World?
+        </h1>
+        <p style={{ margin: 0, color: "#666", fontSize: 13 }}>
+          Guess the country
+        </p>
       </div>
 
       {showStats && (
@@ -695,7 +682,6 @@ export default function WITWorld() {
           const isCorrect = submitted[i] && guesses[i] === country.name;
           const isWrong = submitted[i] && guesses[i] !== country.name;
 
-          return (
             <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", opacity: i > currentRow && !won && !lost ? 0.35 : 1 }}>
               <div style={{
                 width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
@@ -706,12 +692,22 @@ export default function WITWorld() {
                 {i + 1}
               </div>
 
-              <SearchDropdown
-                value={guesses[i]}
-                onChange={v => { const g = [...guesses]; g[i] = v; setGuesses(g); }}
-                disabled={!isActive || alreadyPlayed}
-                placeholder={isActive ? "Select…" : submitted[i] ? guesses[i] || "—" : "—"}
-              />
+              {(won || lost) && submitted[i] ? (
+                <div style={{
+                  flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid #555",
+                  background: "#1e1e2e", color: "#f8f8f2", fontSize: 14,
+                  display: "flex", alignItems: "center"
+                }}>
+                  {guesses[i]}
+                </div>
+              ) : (
+                <SearchDropdown
+                  value={guesses[i]}
+                  onChange={v => { const g = [...guesses]; g[i] = v; setGuesses(g); }}
+                  disabled={!isActive || alreadyPlayed}
+                  placeholder={isActive ? "Select…" : submitted[i] ? guesses[i] || "—" : "—"}
+                />
+              )}
 
               {isActive && !alreadyPlayed && (
                 <button
@@ -745,7 +741,7 @@ export default function WITWorld() {
                       ? `hsl(${hint.percentage * 1.2}, 100%, 50%)` 
                       : `hsl(${120 - (hint.percentage - 70) * 1.2}, 100%, 50%)`
                   }}>
-                    {hint.percentage}%
+                    {hint.percentage}% ({hint.dist}km)
                   </span>
                 </div>
               )}
@@ -801,6 +797,16 @@ export default function WITWorld() {
               }}
             >
               {copied ? "✓ Copied!" : "📤 Share"}
+            </button>
+            <button
+              onClick={() => setShowStats(!showStats)}
+              style={{
+                padding: "10px 18px", borderRadius: 8,
+                background: showStats ? "#6366f1" : "#2a2a3e", color: "#fff", border: "none",
+                fontWeight: 700, fontSize: 13, cursor: "pointer"
+              }}
+            >
+              📊 Stats
             </button>
           </div>
         </div>
