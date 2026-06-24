@@ -486,7 +486,10 @@ export default function WITWorld() {
     if (!gc) return null;
     const dist = Math.round(haversine(loc[1], loc[2], gc.cap[0], gc.cap[1]));
     const dir = bearing(gc.cap[0], gc.cap[1], loc[1], loc[2]);
-    return { dist, dir };
+    // Calculate percentage: max distance ~20000km (halfway around Earth)
+    const maxDist = 20000;
+    const percentage = Math.max(0, Math.round(100 - (dist / maxDist) * 100));
+    return { dist, dir, percentage };
   }
 
   function shareResults() {
@@ -591,13 +594,21 @@ export default function WITWorld() {
                 <div style={{
                   display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
                   background: "#1e1e2e", border: "1px solid #333", borderRadius: 8,
-                  padding: "6px 10px", fontSize: 12, color: "#fb923c", minWidth: 0
+                  padding: "6px 10px", fontSize: 12, minWidth: 0
                 }}>
                   <span>
                     {hint.dir === "N" ? "⬆️" : hint.dir === "S" ? "⬇️" : hint.dir === "E" ? "➡️" : hint.dir === "W" ? "⬅️" :
                      hint.dir === "NE" ? "↗️" : hint.dir === "NW" ? "↖️" : hint.dir === "SE" ? "↘️" : "↙️"}
                   </span>
-                  <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{hint.dist}km</span>
+                  <span style={{ 
+                    fontWeight: 700, 
+                    whiteSpace: "nowrap",
+                    color: hint.percentage < 70 
+                      ? `hsl(${hint.percentage * 1.2}, 100%, 50%)` 
+                      : `hsl(${120 - (hint.percentage - 70) * 1.2}, 100%, 50%)`
+                  }}>
+                    {hint.percentage}%
+                  </span>
                 </div>
               )}
 
