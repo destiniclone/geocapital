@@ -2003,7 +2003,9 @@ function getDailyPuzzle() {
   const utcDateStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
   const countryIdx = getPuzzleForDate(utcDateStr);
   const country = COUNTRIES[countryIdx];
-  const loc = country.locs[Math.floor(Math.random() * country.locs.length)];
+  // Use date hash to pick location deterministically
+  const locIdx = getPuzzleForDate(utcDateStr + "loc") % country.locs.length;
+  const loc = country.locs[locIdx];
   return { country, loc, dateStr: utcDateStr };
 }
 
@@ -2218,12 +2220,29 @@ function SearchDropdown({ value, onChange, disabled, placeholder }) {
 
 // ─── MAIN GAME ─────────────────────────────────────────────────────────────────
 export default function WITWorld() {
-  const [puzzle, setPuzzle] = useState(() => getDailyPuzzle());
+  const [puzzle, setPuzzle] = useState(() => {
+    try {
+      const now = new Date();
+      const today = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+      const stored = localStorage.getItem("witworld_puzzle_date");
+      if (stored === today) {
+        const p = localStorage.getItem("witworld_puzzle");
+        if (p) return JSON.parse(p);
+      }
+      const newPuzzle = getDailyPuzzle();
+      localStorage.setItem("witworld_puzzle_date", today);
+      localStorage.setItem("witworld_puzzle", JSON.stringify(newPuzzle));
+      return newPuzzle;
+    } catch {
+      return getDailyPuzzle();
+    }
+  });
   const [guesses, setGuesses] = useState(Array(6).fill(""));
   const [submitted, setSubmitted] = useState(Array(6).fill(false));
   const [currentRow, setCurrentRow] = useState(0);
   const [won, setWon] = useState(false);
   const [lost, setLost] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { country, loc } = puzzle;
   const { images, loading: imgLoading } = useWikiImages(loc[0]);
 
@@ -2251,10 +2270,16 @@ export default function WITWorld() {
     return { dist, dir };
   }
 
+  const [copied, setCopied] = useState(false);
+
   function shareResults() {
-    const guessCount = submitted.findIndex(s => !s) + 1;
-    const text = `Where In The World? ${guessCount}/6 🎯\nPlay: https://witworld.vercel.app`;
-    navigator.clipboard.writeText(text).catch(() => alert(text));
+    const guessCount = submitted.findIndex(s => !s);
+    const finalCount = guessCount === -1 ? 6 : guessCount + 1;
+    const text = `Where In The World? ${finalCount}/6 🎯\nPlay: https://witworld.vercel.app`;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(() => alert(text));
   }
 
   const TYPE_LABELS = { capital: "🏛️ Capital", former: "🕰️ Former", city: "🌆 City", unicode: "🏛️ UNESCO", nature: "🌳 Nature", sightseeing: "🎭 Sightseeing", water: "💧 Lake", mountain: "⛰️ Mountain" };
@@ -2409,11 +2434,12 @@ export default function WITWorld() {
               onClick={() => shareResults()}
               style={{
                 padding: "10px 18px", borderRadius: 8,
-                background: "#10b981", color: "#fff", border: "none",
-                fontWeight: 700, fontSize: 13, cursor: "pointer"
+                background: copied ? "#059669" : "#10b981", color: "#fff", border: "none",
+                fontWeight: 700, fontSize: 13, cursor: "pointer",
+                transition: "background 0.3s"
               }}
             >
-              📤 Share
+              {copied ? "✓ Copied!" : "📤 Share"}
             </button>
           </div>
         </div>
