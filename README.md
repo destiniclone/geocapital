@@ -1,4 +1,4 @@
-# GeoCapital 🌍
+# GeoCities 🌍
 
 A geography guessing game. You're shown a location (capital, former capital, major city, or UNESCO site) and have 6 attempts to guess which country it belongs to. Wrong guesses show the distance and direction to help you narrow it down.
 
@@ -8,7 +8,7 @@ A geography guessing game. You're shown a location (capital, former capital, maj
 
 1. Go to [github.com](https://github.com) and sign in (or create a free account)
 2. Click **New repository** (the green button or the + icon top right)
-3. Name it `geocapital`, keep it **Public**, click **Create repository**
+3. Name it `geocities`, keep it **Public**, click **Create repository**
 4. Upload all these project files:
    - Click **uploading an existing file** on the repo page
    - Drag and drop all the files/folders from this project
@@ -19,7 +19,7 @@ A geography guessing game. You're shown a location (capital, former capital, maj
 > git init
 > git add .
 > git commit -m "Initial commit"
-> git remote add origin https://github.com/YOUR_USERNAME/geocapital.git
+> git remote add origin https://github.com/YOUR_USERNAME/geocities.git
 > git push -u origin main
 > ```
 
@@ -27,9 +27,9 @@ A geography guessing game. You're shown a location (capital, former capital, maj
 
 1. Go to [vercel.com](https://vercel.com) and sign in with your GitHub account
 2. Click **Add New → Project**
-3. Find and select your `geocapital` repository
+3. Find and select your `geocities` repository
 4. Vercel auto-detects Vite — just click **Deploy**
-5. In ~1 minute you'll get a free URL like `geocapital.vercel.app` 🎉
+5. In ~1 minute you'll get a free URL like `geocities.vercel.app` 🎉
 
 That's it! Every time you push changes to GitHub, Vercel redeploys automatically.
 

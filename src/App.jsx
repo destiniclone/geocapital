@@ -1943,7 +1943,7 @@ function SearchDropdown({ value, onChange, disabled, placeholder }) {
 }
 
 // ─── MAIN GAME ─────────────────────────────────────────────────────────────────
-export default function GeoCapitalGame() {
+export default function GeoCitiesGame() {
   const [puzzle, setPuzzle] = useState(() => pickRandom());
   const [guesses, setGuesses] = useState(Array(6).fill(""));
   const [submitted, setSubmitted] = useState(Array(6).fill(false));
@@ -2003,7 +2003,7 @@ export default function GeoCapitalGame() {
           WHERE IN THE WORLD?
         </div>
         <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900, letterSpacing: -1, color: "#f8f8f2" }}>
-          GeoCapital
+          GeoCities
         </h1>
         <p style={{ margin: "6px 0 0", color: "#666", fontSize: 13 }}>
           Guess the country from its location
