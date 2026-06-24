@@ -1800,12 +1800,13 @@ const COUNTRIES = [
 // ─── HELPERS ───────────────────────────────────────────────────────────────────
 const toRad = d => (d * Math.PI) / 180;
 function haversine(lat1, lon1, lat2, lon2) {
-  const R = 3958.8;
+  const R = 6371;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
   const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
+
 function bearing(lat1, lon1, lat2, lon2) {
   const dLon = toRad(lon2 - lon1);
   const y = Math.sin(dLon)*Math.cos(toRad(lat2));
@@ -1815,53 +1816,149 @@ function bearing(lat1, lon1, lat2, lon2) {
   return dirs[Math.round(b / 45) % 8];
 }
 
-function pickRandom() {
-  const c = COUNTRIES[Math.floor(Math.random() * COUNTRIES.length)];
-  const loc = c.locs[Math.floor(Math.random() * c.locs.length)];
-  return { country: c, loc };
+function getPuzzleForDate(dateStr) {
+  const hash = Array.from(dateStr).reduce((h, c) => ((h << 5) - h) + c.charCodeAt(0), 0);
+  return Math.abs(hash) % COUNTRIES.length;
 }
 
-const TYPE_LABELS = { capital: "🏛️ Capital", former: "🕰️ Former Capital", city: "🌆 Major City", unesco: "🏛️ UNESCO Site" };
-const TYPE_COLORS = { capital: "#4ade80", former: "#fb923c", city: "#60a5fa", unesco: "#e879f9" };
+function getDailyPuzzle() {
+  const now = new Date();
+  const utcDateStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+  const countryIdx = getPuzzleForDate(utcDateStr);
+  const country = COUNTRIES[countryIdx];
+  const loc = country.locs[Math.floor(Math.random() * country.locs.length)];
+  return { country, loc, dateStr: utcDateStr };
+}
 
-// ─── WIKIPEDIA IMAGE HOOK ───────────────────────────────────────────────────────
-function useWikiImage(locationName) {
-  const [imgUrl, setImgUrl] = useState(null);
+// ─── WIKIPEDIA CAROUSEL ────────────────────────────────────────────────────────
+function useWikiImages(locationName) {
+  const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    setImgUrl(null);
     setLoading(true);
+    setImages([]);
 
-    async function fetchImage() {
+    async function fetchImages() {
       try {
-        // Search for the article
         const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(locationName)}&srlimit=1&format=json&origin=*`;
         const searchRes = await fetch(searchUrl);
         const searchData = await searchRes.json();
         const results = searchData?.query?.search;
-        if (!results || results.length === 0) { if (!cancelled) setLoading(false); return; }
+        if (!results?.length) { if (!cancelled) setLoading(false); return; }
 
         const title = results[0].title;
-        // Fetch page image
-        const imgApiUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&pithumbsize=600&format=json&origin=*`;
-        const imgRes = await fetch(imgApiUrl);
-        const imgData = await imgRes.json();
-        const pages = imgData?.query?.pages;
+        const imagesUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=images&format=json&origin=*`;
+        const imagesRes = await fetch(imagesUrl);
+        const imagesData = await imagesRes.json();
+        const pages = imagesData?.query?.pages;
         const page = pages ? Object.values(pages)[0] : null;
-        const url = page?.thumbnail?.source || null;
-        if (!cancelled) { setImgUrl(url); setLoading(false); }
-      } catch {
-        if (!cancelled) setLoading(false);
+        const images_list = page?.images || [];
+
+        const imageUrls = [];
+        for (const img of images_list.slice(0, 10)) {
+          const imgTitle = img.title;
+          if (!/\.svg$/i.test(imgTitle)) {
+            const imgInfoUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(imgTitle)}&prop=imageinfo&iiprop=url&format=json&origin=*`;
+            const imgInfoRes = await fetch(imgInfoUrl);
+            const imgInfoData = await imgInfoRes.json();
+            const imgPages = imgInfoData?.query?.pages;
+            const imgPage = imgPages ? Object.values(imgPages)[0] : null;
+            const url = imgPage?.imageinfo?.[0]?.url;
+            if (url && imageUrls.length < 3) imageUrls.push(url);
+            if (imageUrls.length === 3) break;
+          }
+        }
+
+        if (!cancelled) { setImages(imageUrls); setLoading(false); }
+      } catch (e) {
+        if (!cancelled) { setLoading(false); }
       }
     }
 
-    fetchImage();
+    fetchImages();
     return () => { cancelled = true; };
   }, [locationName]);
 
-  return { imgUrl, loading };
+  return { images, loading };
+}
+
+// ─── IMAGE CAROUSEL ────────────────────────────────────────────────────────────
+function ImageCarousel({ images, loading }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  if (loading) {
+    return (
+      <div style={{
+        width: "100%", height: 220, background: "#111118",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        flexDirection: "column", gap: 8
+      }}>
+        <div style={{
+          width: 28, height: 28, borderRadius: "50%",
+          border: "3px solid #333", borderTopColor: "#6366f1",
+          animation: "spin 0.8s linear infinite"
+        }} />
+        <span style={{ color: "#444", fontSize: 13 }}>Loading photos…</span>
+      </div>
+    );
+  }
+
+  if (!images.length) {
+    return (
+      <div style={{
+        width: "100%", height: 220, background: "#111118",
+        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48
+      }}>
+        🌍
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        width: "100%", height: 220, background: "#111118",
+        position: "relative", overflow: "hidden", display: "flex",
+        alignItems: "center", justifyContent: "center"
+      }}
+      onTouchStart={(e) => {
+        const startX = e.touches[0].clientX;
+        const handleTouchEnd = (e2) => {
+          const endX = e2.changedTouches[0].clientX;
+          if (startX - endX > 50) setCurrentIndex((i) => (i + 1) % images.length);
+          else if (endX - startX > 50) setCurrentIndex((i) => (i - 1 + images.length) % images.length);
+          document.removeEventListener("touchend", handleTouchEnd);
+        };
+        document.addEventListener("touchend", handleTouchEnd);
+      }}
+    >
+      <img
+        src={images[currentIndex]}
+        alt={`Photo ${currentIndex + 1}`}
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+      />
+      <div style={{
+        position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)",
+        display: "flex", gap: 6
+      }}>
+        {images.map((_, i) => (
+          <div
+            key={i}
+            style={{
+              width: 6, height: 6, borderRadius: "50%",
+              background: i === currentIndex ? "#fff" : "rgba(255,255,255,0.4)"
+            }}
+          />
+        ))}
+      </div>
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0, height: 40,
+        background: "linear-gradient(transparent, #1e1e2e)"
+      }} />
+    </div>
+  );
 }
 
 // ─── SEARCHABLE DROPDOWN ────────────────────────────────────────────────────────
@@ -1943,16 +2040,15 @@ function SearchDropdown({ value, onChange, disabled, placeholder }) {
 }
 
 // ─── MAIN GAME ─────────────────────────────────────────────────────────────────
-export default function GeoCapitalGame() {
-  const [puzzle, setPuzzle] = useState(() => pickRandom());
+export default function WITWorld() {
+  const [puzzle, setPuzzle] = useState(() => getDailyPuzzle());
   const [guesses, setGuesses] = useState(Array(6).fill(""));
   const [submitted, setSubmitted] = useState(Array(6).fill(false));
   const [currentRow, setCurrentRow] = useState(0);
   const [won, setWon] = useState(false);
   const [lost, setLost] = useState(false);
-
   const { country, loc } = puzzle;
-  const { imgUrl, loading: imgLoading } = useWikiImage(loc[0]);
+  const { images, loading: imgLoading } = useWikiImages(loc[0]);
 
   function handleGuess(idx) {
     const guess = guesses[idx];
@@ -1978,14 +2074,14 @@ export default function GeoCapitalGame() {
     return { dist, dir };
   }
 
-  function reset() {
-    setPuzzle(pickRandom());
-    setGuesses(Array(6).fill(""));
-    setSubmitted(Array(6).fill(false));
-    setCurrentRow(0);
-    setWon(false);
-    setLost(false);
+  function shareResults() {
+    const guessCount = submitted.findIndex(s => !s) + 1;
+    const text = `Where In The World? ${guessCount}/6 🎯\nPlay: https://witworld.vercel.app`;
+    navigator.clipboard.writeText(text).catch(() => alert(text));
   }
+
+  const TYPE_LABELS = { capital: "🏛️ Capital", former: "🕰️ Former", city: "🌆 City", unicode: "🏛️ UNESCO", nature: "🌳 Nature", sightseeing: "🎭 Sightseeing", water: "💧 Lake", mountain: "⛰️ Mountain" };
+  const TYPE_COLORS = { capital: "#4ade80", former: "#fb923c", city: "#60a5fa", unicode: "#e879f9", nature: "#10b981", sightseeing: "#f59e0b", water: "#0ea5e9", mountain: "#8b5cf6" };
 
   const typeColor = TYPE_COLORS[loc[3]];
   const typeLabel = TYPE_LABELS[loc[3]];
@@ -1997,16 +2093,14 @@ export default function GeoCapitalGame() {
       flexDirection: "column", alignItems: "center", padding: "24px 16px 48px"
     }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
       {/* Header */}
       <div style={{ textAlign: "center", marginBottom: 28 }}>
-        <div style={{ fontSize: 13, letterSpacing: 4, color: "#6366f1", fontWeight: 700, marginBottom: 6 }}>
-          WHERE IN THE WORLD?
-        </div>
-        <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900, letterSpacing: -1, color: "#f8f8f2" }}>
-          GeoCapital
+        <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900, letterSpacing: -1, color: "#f8f8f2", marginBottom: 4 }}>
+          Where In The World?
         </h1>
-        <p style={{ margin: "6px 0 0", color: "#666", fontSize: 13 }}>
-          Guess the country from its location
+        <p style={{ margin: 0, color: "#666", fontSize: 13 }}>
+          Guess the country
         </p>
       </div>
 
@@ -2017,41 +2111,7 @@ export default function GeoCapitalGame() {
         overflow: "hidden", marginBottom: 28, width: "100%", maxWidth: 520,
         boxShadow: `0 0 32px ${typeColor}22`
       }}>
-        {/* Photo area */}
-        <div style={{
-          width: "100%", height: 220, background: "#111118",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          position: "relative", overflow: "hidden"
-        }}>
-          {imgLoading && (
-            <div style={{ color: "#444", fontSize: 13, display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-              <div style={{
-                width: 28, height: 28, borderRadius: "50%",
-                border: "3px solid #333", borderTopColor: typeColor,
-                animation: "spin 0.8s linear infinite"
-              }} />
-              <span>Loading photo…</span>
-            </div>
-          )}
-          {!imgLoading && imgUrl && (
-            <img
-              src={imgUrl}
-              alt={loc[0]}
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-            />
-          )}
-          {!imgLoading && !imgUrl && (
-            <div style={{ color: "#333", fontSize: 48 }}>🌍</div>
-          )}
-          {/* Gradient overlay at bottom */}
-          {imgUrl && (
-            <div style={{
-              position: "absolute", bottom: 0, left: 0, right: 0, height: 60,
-              background: "linear-gradient(transparent, #1e1e2e)"
-            }} />
-          )}
-        </div>
-
+        <ImageCarousel images={images} loading={imgLoading} />
         <div style={{ padding: "16px 24px 20px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
             <span style={{
@@ -2065,7 +2125,7 @@ export default function GeoCapitalGame() {
             {loc[0]}
           </div>
           <div style={{ marginTop: 8, fontSize: 12, color: "#888" }}>
-            Which country does this location belong to?
+            Which country is this in?
           </div>
         </div>
       </div>
@@ -2080,7 +2140,6 @@ export default function GeoCapitalGame() {
 
           return (
             <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", opacity: i > currentRow && !won && !lost ? 0.35 : 1 }}>
-              {/* Row number */}
               <div style={{
                 width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
                 background: isCorrect ? "#4ade80" : isWrong ? "#f87171" : isActive ? "#6366f1" : "#2a2a3e",
@@ -2090,19 +2149,13 @@ export default function GeoCapitalGame() {
                 {i + 1}
               </div>
 
-              {/* Dropdown */}
               <SearchDropdown
                 value={guesses[i]}
-                onChange={v => {
-                  const g = [...guesses];
-                  g[i] = v;
-                  setGuesses(g);
-                }}
+                onChange={v => { const g = [...guesses]; g[i] = v; setGuesses(g); }}
                 disabled={!isActive}
-                placeholder={isActive ? "Select a country…" : submitted[i] ? guesses[i] || "—" : "—"}
+                placeholder={isActive ? "Select…" : submitted[i] ? guesses[i] || "—" : "—"}
               />
 
-              {/* Submit */}
               {isActive && (
                 <button
                   onClick={() => handleGuess(i)}
@@ -2112,36 +2165,31 @@ export default function GeoCapitalGame() {
                     background: guesses[i] ? "#6366f1" : "#2a2a3e",
                     color: "#fff", fontWeight: 700, fontSize: 13,
                     cursor: guesses[i] ? "pointer" : "not-allowed", flexShrink: 0,
-                    transition: "background 0.2s"
                   }}
                 >
                   Guess
                 </button>
               )}
 
-              {/* Hint */}
               {hint && (
                 <div style={{
                   display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
                   background: "#1e1e2e", border: "1px solid #333", borderRadius: 8,
-                  padding: "6px 10px", fontSize: 12, color: "#fb923c"
+                  padding: "6px 10px", fontSize: 12, color: "#fb923c", minWidth: 0
                 }}>
-                  <span style={{ fontSize: 14 }}>
+                  <span>
                     {hint.dir === "N" ? "⬆️" : hint.dir === "S" ? "⬇️" : hint.dir === "E" ? "➡️" : hint.dir === "W" ? "⬅️" :
                      hint.dir === "NE" ? "↗️" : hint.dir === "NW" ? "↖️" : hint.dir === "SE" ? "↘️" : "↙️"}
                   </span>
-                  <span style={{ fontWeight: 700 }}>{hint.dir}</span>
-                  <span style={{ color: "#666" }}>·</span>
-                  <span>{hint.dist.toLocaleString()} mi</span>
+                  <span style={{ fontWeight: 700, whiteSpace: "nowrap" }}>{hint.dist}km</span>
                 </div>
               )}
 
-              {/* Correct badge */}
               {isCorrect && (
                 <div style={{
                   flexShrink: 0, background: "#4ade8022", border: "1px solid #4ade80",
                   borderRadius: 8, padding: "6px 10px", fontSize: 12, color: "#4ade80", fontWeight: 700
-                }}>✓ Correct!</div>
+                }}>✓</div>
               )}
             </div>
           );
@@ -2170,7 +2218,7 @@ export default function GeoCapitalGame() {
           </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
             <a
-              href={`https://simple.wikipedia.org/wiki/${country.wiki}`}
+              href={`https://simple.wikipedia.org/wiki/${loc[0].replace(/\s+/g, '_')}`}
               target="_blank" rel="noopener noreferrer"
               style={{
                 padding: "10px 18px", borderRadius: 8,
@@ -2178,33 +2226,33 @@ export default function GeoCapitalGame() {
                 fontWeight: 700, fontSize: 13
               }}
             >
-              📖 Learn about {country.name}
+              📖 Learn about {loc[0]}
             </a>
             <button
-              onClick={reset}
+              onClick={() => shareResults()}
               style={{
                 padding: "10px 18px", borderRadius: 8,
-                background: "#6366f1", color: "#fff", border: "none",
+                background: "#10b981", color: "#fff", border: "none",
                 fontWeight: 700, fontSize: 13, cursor: "pointer"
               }}
             >
-              🔄 New Puzzle
+              📤 Share
             </button>
           </div>
         </div>
       )}
 
-      {/* Legend */}
-      <div style={{
-        marginTop: 32, display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center"
-      }}>
-        {Object.entries(TYPE_LABELS).map(([k, v]) => (
-          <div key={k} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "#888" }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: TYPE_COLORS[k], display: "inline-block" }} />
-            {v}
-          </div>
-        ))}
-      </div>
+      {/* Come back tomorrow message */}
+      {(won || lost) && (
+        <div style={{
+          marginTop: 16, textAlign: "center", color: "#666", fontSize: 13
+        }}>
+          Come back tomorrow. New game every day.
+        </div>
+      )}
     </div>
   );
 }
+  
+
+      
