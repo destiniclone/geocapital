@@ -507,12 +507,15 @@ export default function WITWorld() {
       statsSavedRef.current = true;
       
       const guessCount = submitted.findIndex(s => !s);
-      const finalCount = guessCount === -1 ? 6 : guessCount;
+      // guessCount is 0-indexed position of first false, so it's the number of true values
+      // If guessed on try 5: submitted = [true, true, true, true, true, false], guessCount = 5
+      // We want to store in index 4 (0-4 = tries 1-5)
+      const arrayIndex = guessCount === -1 ? 5 : guessCount - 1;
       
       const newStats = { ...stats, games: stats.games + 1 };
       if (won) {
         newStats.wins = stats.wins + 1;
-        newStats.guesses[finalCount] = (newStats.guesses[finalCount] || 0) + 1;
+        newStats.guesses[arrayIndex] = (newStats.guesses[arrayIndex] || 0) + 1;
       } else {
         newStats.guesses[5] = (newStats.guesses[5] || 0) + 1;
       }
@@ -588,7 +591,7 @@ export default function WITWorld() {
     }).catch(() => alert(text));
   }
 
-  const TYPE_LABELS = { capital: "🏛️ Capital", former: "🕰️ Former", city: "🌆 Major City/Metro", unicode: "🏛️ UNESCO" };
+  const TYPE_LABELS = { capital: "🏛️ Capital", former: "🕰️ Former", city: "🌆 City", unicode: "🏛️ UNESCO", nature: "🌿 Nature" };
   const TYPE_COLORS = { capital: "#4ade80", former: "#fb923c", city: "#60a5fa", unicode: "#e879f9" };
 
   const typeColor = TYPE_COLORS[loc[3]];
@@ -644,6 +647,20 @@ export default function WITWorld() {
         <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900, letterSpacing: -1, color: "#f8f8f2", marginBottom: 4 }}>
           where in the world?
         </h1>
+        <div style={{ 
+          display: "flex", 
+          justifyContent: "center", 
+          gap: 20, 
+          marginBottom: 12,
+          fontSize: 12,
+          color: "#666"
+        }}>
+          <span>🏛️ capital</span>
+          <span>🕰️ former</span>
+          <span>🌆 city</span>
+          <span>🏛️ unesco</span>
+          <span>🌿 nature</span>
+        </div>
         <p style={{ margin: 0, color: "#666", fontSize: 13 }}>
           guess the country
         </p>
