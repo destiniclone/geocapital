@@ -249,17 +249,21 @@ function useWikiImages(locationName) {
         const images_list = page?.images || [];
 
         const imageUrls = [];
-        for (const img of images_list.slice(0, 10)) {
+        // Keywords that indicate map/diagram graphics that would be too much of a hint
+        const mapKeywords = /map|locate|position|geography|diagram|chart|flag|coat of arms|infobox|location map|administrative/i;
+        
+        for (const img of images_list.slice(0, 15)) {
           const imgTitle = img.title;
-          if (!/\.svg$/i.test(imgTitle)) {
+          // Skip SVG files and map-like graphics
+          if (!/\.svg$/i.test(imgTitle) && !mapKeywords.test(imgTitle)) {
             const imgInfoUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(imgTitle)}&prop=imageinfo&iiprop=url&format=json&origin=*`;
             const imgInfoRes = await fetch(imgInfoUrl);
             const imgInfoData = await imgInfoRes.json();
             const imgPages = imgInfoData?.query?.pages;
             const imgPage = imgPages ? Object.values(imgPages)[0] : null;
             const url = imgPage?.imageinfo?.[0]?.url;
-            if (url && imageUrls.length < 3) imageUrls.push(url);
-            if (imageUrls.length === 3) break;
+            if (url && imageUrls.length < 2) imageUrls.push(url);
+            if (imageUrls.length === 2) break;
           }
         }
 
@@ -640,20 +644,6 @@ export default function WITWorld() {
         <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900, letterSpacing: -1, color: "#f8f8f2", marginBottom: 4 }}>
           where in the world?
         </h1>
-        <div style={{ 
-          display: "flex", 
-          justifyContent: "center", 
-          gap: 24, 
-          marginBottom: 16,
-          fontSize: 13,
-          color: "#aaa"
-        }}>
-          <span>🏛️ capital</span>
-          <span>🕰️ former</span>
-          <span>🌆 city</span>
-          <span>🏛️ unesco</span>
-          <span>🌿 nature</span>
-        </div>
         <p style={{ margin: 0, color: "#666", fontSize: 13 }}>
           guess the country
         </p>
@@ -667,19 +657,11 @@ export default function WITWorld() {
       }}>
         <ImageCarousel images={images} loading={imgLoading} />
         <div style={{ padding: "16px 24px 20px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-            <span style={{
-              background: `${typeColor}22`, color: typeColor, borderRadius: 6,
-              padding: "3px 10px", fontSize: 12, fontWeight: 700, letterSpacing: 0.5
-            }}>
-              {typeLabel}
-            </span>
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5, color: "#f8f8f2" }}>
+          <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5, color: "#f8f8f2", textAlign: "center" }}>
             {loc[0]}
           </div>
-          <div style={{ marginTop: 8, fontSize: 12, color: "#888" }}>
-            Which country is this in?
+          <div style={{ marginTop: 8, fontSize: 12, color: "#888", textAlign: "center" }}>
+            which country is this <span style={{ color: typeColor }}>{TYPE_LABELS[loc[3]]}</span> in?
           </div>
         </div>
       </div>
