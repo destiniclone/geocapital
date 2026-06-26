@@ -212,8 +212,24 @@ function getPuzzleForDate(dateStr) {
 function getDailyPuzzle() {
   const now = new Date();
   const utcDateStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
-  const countryIdx = getPuzzleForDate(utcDateStr);
-  const country = COUNTRIES[countryIdx];
+  
+  // Find a country with locations
+  let countryIdx = getPuzzleForDate(utcDateStr) % COUNTRIES.length;
+  let country = COUNTRIES[countryIdx];
+  
+  // If the selected country has no locations, find one that does
+  let attempts = 0;
+  while ((!country.locs || country.locs.length === 0) && attempts < COUNTRIES.length) {
+    countryIdx = (countryIdx + 1) % COUNTRIES.length;
+    country = COUNTRIES[countryIdx];
+    attempts++;
+  }
+  
+  if (!country.locs || country.locs.length === 0) {
+    console.error("No countries with locations found");
+    return null;
+  }
+  
   const locIdx = getPuzzleForDate(utcDateStr + "loc") % country.locs.length;
   const loc = country.locs[locIdx];
   return { country, loc, dateStr: utcDateStr };
@@ -221,8 +237,13 @@ function getDailyPuzzle() {
 
 function getRandomPuzzle() {
   if (COUNTRIES.length === 0) return null;
-  const countryIdx = Math.floor(Math.random() * COUNTRIES.length);
-  const country = COUNTRIES[countryIdx];
+  
+  // Get countries that have locations
+  const countriesWithLocs = COUNTRIES.filter(c => c.locs && c.locs.length > 0);
+  if (countriesWithLocs.length === 0) return null;
+  
+  const countryIdx = Math.floor(Math.random() * countriesWithLocs.length);
+  const country = countriesWithLocs[countryIdx];
   const locIdx = Math.floor(Math.random() * country.locs.length);
   const loc = country.locs[locIdx];
   return { country, loc, dateStr: null };
