@@ -789,7 +789,7 @@ export default function WITWorld() {
       }}>
         EVERY DAY A NEW GAME
       </div>
-    </div>
+      </div>
       )}
     </div>
   );
