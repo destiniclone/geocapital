@@ -276,33 +276,45 @@ function useWikiImages(locationName) {
         if (!results?.length) { if (!cancelled) setLoading(false); return; }
 
         const title = results[0].title;
-        const imagesUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=images&format=json&origin=*`;
-        const imagesRes = await fetch(imagesUrl);
-        const imagesData = await imagesRes.json();
-        const pages = imagesData?.query?.pages;
+        // Get page content to find infobox image
+        const pageUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=pageimages&pithumbsize=500&format=json&origin=*`;
+        const pageRes = await fetch(pageUrl);
+        const pageData = await pageRes.json();
+        const pages = pageData?.query?.pages;
         const page = pages ? Object.values(pages)[0] : null;
-        const images_list = page?.images || [];
-
-        const imageUrls = [];
-        // Keywords that indicate map/diagram graphics that would be too much of a hint
-        const mapKeywords = /map|locate|position|geography|diagram|chart|flag|coat of arms|infobox|location map|administrative/i;
+        const mainImage = page?.thumbnail?.source;
         
-        for (const img of images_list.slice(0, 15)) {
-          const imgTitle = img.title;
-          // Skip SVG files and map-like graphics
-          if (!/\.svg$/i.test(imgTitle) && !mapKeywords.test(imgTitle)) {
-            const imgInfoUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(imgTitle)}&prop=imageinfo&iiprop=url&format=json&origin=*`;
-            const imgInfoRes = await fetch(imgInfoUrl);
-            const imgInfoData = await imgInfoRes.json();
-            const imgPages = imgInfoData?.query?.pages;
-            const imgPage = imgPages ? Object.values(imgPages)[0] : null;
-            const url = imgPage?.imageinfo?.[0]?.url;
-            if (url && imageUrls.length < 2) imageUrls.push(url);
-            if (imageUrls.length === 2) break;
-          }
-        }
+        if (mainImage && !cancelled) {
+          setImages([mainImage]);
+        } else {
+          // Fallback: get first non-map image from page
+          const imagesUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(title)}&prop=images&format=json&origin=*`;
+          const imagesRes = await fetch(imagesUrl);
+          const imagesData = await imagesRes.json();
+          const pagesImages = imagesData?.query?.pages;
+          const pageImages = pagesImages ? Object.values(pagesImages)[0] : null;
+          const images_list = pageImages?.images || [];
 
-        if (!cancelled) { setImages(imageUrls); setLoading(false); }
+          const mapKeywords = /map|locate|position|geography|diagram|chart|flag|coat of arms|infobox|location map|administrative/i;
+          
+          for (const img of images_list.slice(0, 10)) {
+            const imgTitle = img.title;
+            if (!/\.svg$/i.test(imgTitle) && !mapKeywords.test(imgTitle)) {
+              const imgInfoUrl = `https://en.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(imgTitle)}&prop=imageinfo&iiprop=url&format=json&origin=*`;
+              const imgInfoRes = await fetch(imgInfoUrl);
+              const imgInfoData = await imgInfoRes.json();
+              const imgPages = imgInfoData?.query?.pages;
+              const imgPage = imgPages ? Object.values(imgPages)[0] : null;
+              const url = imgPage?.imageinfo?.[0]?.url;
+              if (url && !cancelled) {
+                setImages([url]);
+                setLoading(false);
+                return;
+              }
+            }
+          }
+          if (!cancelled) setLoading(false);
+        }
       } catch (e) {
         if (!cancelled) { setLoading(false); }
       }
