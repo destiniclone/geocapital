@@ -499,9 +499,9 @@ export default function WITWorld() {
   const [stats, setStats] = useState(() => {
     try {
       const stored = localStorage.getItem("witworld_stats");
-      return stored ? JSON.parse(stored) : { games: 0, wins: 0, guesses: [0, 0, 0, 0, 0, 0] };
+      return stored ? JSON.parse(stored) : { games: 0, wins: 0, guesses: [0, 0, 0, 0, 0, 0, 0] };
     } catch {
-      return { games: 0, wins: 0, guesses: [0, 0, 0, 0, 0, 0] };
+      return { games: 0, wins: 0, guesses: [0, 0, 0, 0, 0, 0, 0] };
     }
   });
 
@@ -548,7 +548,7 @@ export default function WITWorld() {
         newStats.wins = stats.wins + 1;
         newStats.guesses[arrayIndex] = (newStats.guesses[arrayIndex] || 0) + 1;
       } else {
-        newStats.guesses[5] = (newStats.guesses[5] || 0) + 1;
+        newStats.guesses[6] = (newStats.guesses[6] || 0) + 1;
       }
       
       setStats(newStats);
@@ -920,11 +920,11 @@ export default function WITWorld() {
           {/* Wikipedia Paragraph Card */}
           <div style={{
             background: "linear-gradient(135deg, #1e1e2e, #16162a)",
-            border: "1px solid #333", borderRadius: 16,
-            padding: "20px"
+            border: "1px solid #6366f1", borderRadius: 16,
+            padding: "20px", textAlign: "center"
           }}>
             <div style={{ fontSize: 12, color: "#666", marginBottom: 12, fontWeight: 700 }}>ABOUT {country.name.toUpperCase()}</div>
-            <div style={{ fontSize: 13, color: "#ccc", lineHeight: 1.6, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: "#ccc", lineHeight: 1.6, marginBottom: 16, textAlign: "left" }}>
               {wikiSummary ? wikiSummary : "Loading..."}
             </div>
             <a href={`https://simple.wikipedia.org/wiki/${country.wiki}`} target="_blank" rel="noopener noreferrer"
@@ -970,7 +970,7 @@ export default function WITWorld() {
 
             <div>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#aaa", marginBottom: 8 }}>GUESS DISTRIBUTION</div>
-              {[1, 2, 3, 4, 5, 6].map(i => {
+              {[1, 2, 3, 4, 5, 6, 7].map(i => {
                 const count = stats.guesses[i - 1] || 0;
                 const maxCount = Math.max(...stats.guesses, 1);
                 const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
