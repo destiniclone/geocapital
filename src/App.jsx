@@ -710,7 +710,7 @@ export default function WITWorld() {
       )}
 
       <div style={{ textAlign: "center", marginBottom: 28 }}>
-        <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900, letterSpacing: -1, color: "#f8f8f2", marginBottom: 4 }}>
+        <h1 style={{ margin: 0, fontSize: 36, fontWeight: 900, letterSpacing: -1, color: "#f8f8f2", marginBottom: 4, fontFamily: "'Geist', 'Segoe UI', sans-serif" }}>
           where in the world?
         </h1>
         <div style={{ 
@@ -743,7 +743,7 @@ export default function WITWorld() {
           <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -0.5, color: "#f8f8f2", textAlign: "center" }}>
             {loc[0]}
           </div>
-          <div style={{ marginTop: 8, fontSize: 12, color: "#888", textAlign: "center" }}>
+          <div style={{ marginTop: 8, fontSize: 15, color: "#888", textAlign: "center" }}>
             which country is this <span style={{ color: typeColor }}>{TYPE_LABELS[loc[3]]}</span> in?
           </div>
         </div>
@@ -845,7 +845,7 @@ export default function WITWorld() {
           marginTop: 28, width: "100%", maxWidth: 520,
           background: won ? "linear-gradient(135deg,#052e16,#14532d)" : "linear-gradient(135deg,#1c0a0a,#450a0a)",
           border: `1px solid ${won ? "#4ade80" : "#f87171"}`,
-          borderRadius: 16, padding: "20px 24px", textAlign: "center"
+          borderRadius: 16, padding: "20px", textAlign: "center"
         }}>
           <div style={{ fontSize: 28, marginBottom: 6 }}>{won ? "🎉" : "💡"}</div>
           <div style={{ fontWeight: 800, fontSize: 20, color: won ? "#4ade80" : "#f87171", marginBottom: 4 }}>
@@ -890,7 +890,7 @@ export default function WITWorld() {
             <div style={{ fontSize: 13, color: "#ccc", lineHeight: 1.6, marginBottom: 16, textAlign: "left" }}>
               {wikiSummary ? wikiSummary : "Loading..."}
             </div>
-            <a href={`https://simple.wikipedia.org/wiki/${loc[0].replace(/\s+/g, '_')}`} target="_blank" rel="noopener noreferrer"
+            <a href={`https://en.wikipedia.org/wiki/${loc[0].replace(/\s+/g, '_')}`} target="_blank" rel="noopener noreferrer"
               style={{
                 display: "inline-block",
                 padding: "8px 16px", borderRadius: 8,
