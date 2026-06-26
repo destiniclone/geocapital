@@ -2,6 +2,199 @@ import { useState, useMemo, useRef, useEffect } from "react";
 
 // ─── COUNTRIES DATA ──────────────────────────────────────────────────────────────
 // 4 types only: capital, former, city, unicode
+// Border data: which countries share land borders with which
+const BORDERS = {
+  "Spain": ["France", "Portugal", "Andorra"],
+  "Portugal": ["Spain"],
+  "France": ["Spain", "Italy", "Switzerland", "Germany", "Luxembourg", "Belgium"],
+  "Italy": ["France", "Switzerland", "Austria", "Slovenia"],
+  "Switzerland": ["France", "Italy", "Austria", "Liechtenstein", "Germany"],
+  "Austria": ["Switzerland", "Liechtenstein", "Germany", "Czech Republic", "Slovakia", "Hungary", "Slovenia", "Italy"],
+  "Germany": ["France", "Switzerland", "Austria", "Czech Republic", "Poland", "Denmark", "Belgium", "Netherlands", "Luxembourg"],
+  "Netherlands": ["Germany", "Belgium"],
+  "Belgium": ["France", "Netherlands", "Germany", "Luxembourg"],
+  "Luxembourg": ["France", "Belgium", "Germany"],
+  "Poland": ["Germany", "Czech Republic", "Slovakia", "Ukraine", "Belarus", "Lithuania", "Russia"],
+  "Czech Republic": ["Poland", "Slovakia", "Austria", "Germany"],
+  "Slovakia": ["Poland", "Czech Republic", "Austria", "Hungary", "Ukraine"],
+  "Hungary": ["Austria", "Slovakia", "Ukraine", "Romania", "Serbia", "Croatia", "Slovenia"],
+  "Romania": ["Hungary", "Serbia", "Bulgaria", "Moldova", "Ukraine"],
+  "Bulgaria": ["Romania", "Serbia", "North Macedonia", "Greece", "Turkey"],
+  "Greece": ["Bulgaria", "North Macedonia", "Albania", "Turkey"],
+  "Turkey": ["Bulgaria", "Greece", "Georgia", "Armenia", "Azerbaijan", "Iran", "Iraq", "Syria"],
+  "Ukraine": ["Poland", "Slovakia", "Hungary", "Romania", "Moldova", "Belarus", "Russia"],
+  "Belarus": ["Poland", "Lithuania", "Russia", "Ukraine"],
+  "Lithuania": ["Poland", "Belarus", "Russia", "Latvia"],
+  "Latvia": ["Lithuania", "Estonia", "Russia", "Belarus"],
+  "Estonia": ["Latvia", "Russia"],
+  "Russia": ["Poland", "Lithuania", "Latvia", "Estonia", "Belarus", "Ukraine", "Georgia", "Azerbaijan", "Kazakhstan", "Mongolia", "China", "North Korea", "Finland", "Norway"],
+  "Finland": ["Russia", "Sweden", "Norway"],
+  "Sweden": ["Finland", "Norway"],
+  "Norway": ["Finland", "Sweden", "Russia"],
+  "Denmark": ["Germany"],
+  "Iceland": [],
+  "Ireland": [],
+  "United Kingdom": [],
+  "Portugal": ["Spain"],
+  "Andorra": ["France", "Spain"],
+  "Liechtenstein": ["Switzerland", "Austria"],
+  "Monaco": ["France"],
+  "San Marino": ["Italy"],
+  "Vatican City": ["Italy"],
+  "Malta": [],
+  "Cyprus": [],
+  "Kosovo": ["Serbia", "Albania", "North Macedonia", "Montenegro"],
+  "Serbia": ["Hungary", "Romania", "Bulgaria", "North Macedonia", "Albania", "Montenegro", "Bosnia and Herzegovina", "Croatia", "Slovenia"],
+  "Montenegro": ["Serbia", "Kosovo", "Albania", "Bosnia and Herzegovina"],
+  "Albania": ["Greece", "North Macedonia", "Serbia", "Kosovo", "Montenegro"],
+  "North Macedonia": ["Greece", "Bulgaria", "Serbia", "Kosovo", "Albania"],
+  "Bosnia and Herzegovina": ["Serbia", "Croatia", "Montenegro"],
+  "Croatia": ["Slovenia", "Hungary", "Serbia", "Bosnia and Herzegovina"],
+  "Slovenia": ["Italy", "Austria", "Hungary", "Croatia"],
+  "Moldova": ["Romania", "Ukraine"],
+  "Georgia": ["Russia", "Turkey", "Armenia", "Azerbaijan"],
+  "Armenia": ["Turkey", "Georgia", "Azerbaijan", "Iran"],
+  "Azerbaijan": ["Russia", "Georgia", "Turkey", "Armenia", "Iran"],
+  "Iran": ["Turkey", "Armenia", "Azerbaijan", "Turkmenistan", "Afghanistan", "Pakistan", "Iraq"],
+  "Iraq": ["Turkey", "Iran", "Syria", "Jordan", "Saudi Arabia", "Kuwait"],
+  "Syria": ["Turkey", "Iraq", "Jordan", "Israel", "Lebanon"],
+  "Israel": ["Syria", "Jordan", "Egypt", "Lebanon", "Palestine"],
+  "Palestine": ["Israel"],
+  "Lebanon": ["Syria", "Israel"],
+  "Jordan": ["Israel", "Syria", "Iraq", "Saudi Arabia"],
+  "Saudi Arabia": ["Jordan", "Iraq", "Kuwait", "Qatar", "United Arab Emirates", "Oman", "Yemen"],
+  "Kuwait": ["Iraq", "Saudi Arabia"],
+  "Bahrain": [],
+  "Qatar": ["Saudi Arabia", "United Arab Emirates"],
+  "United Arab Emirates": ["Saudi Arabia", "Oman"],
+  "Oman": ["Saudi Arabia", "United Arab Emirates", "Yemen"],
+  "Yemen": ["Saudi Arabia", "Oman"],
+  "Egypt": ["Israel", "Sudan", "Libya"],
+  "Sudan": ["Egypt", "Eritrea", "Ethiopia", "South Sudan", "Chad", "Libya"],
+  "Libya": ["Egypt", "Sudan", "Chad", "Niger", "Algeria", "Tunisia"],
+  "Tunisia": ["Algeria", "Libya"],
+  "Algeria": ["Tunisia", "Libya", "Niger", "Mali", "Mauritania", "Western Sahara", "Morocco"],
+  "Morocco": ["Algeria", "Western Sahara", "Spain"],
+  "Western Sahara": ["Morocco", "Algeria", "Mauritania"],
+  "Mauritania": ["Western Sahara", "Algeria", "Mali", "Senegal"],
+  "Senegal": ["Mauritania", "Mali", "Guinea", "Guinea-Bissau", "Gambia"],
+  "Gambia": ["Senegal"],
+  "Guinea-Bissau": ["Senegal", "Guinea"],
+  "Guinea": ["Senegal", "Guinea-Bissau", "Mali", "Sierra Leone", "Liberia", "Ivory Coast"],
+  "Sierra Leone": ["Guinea", "Liberia"],
+  "Liberia": ["Sierra Leone", "Guinea", "Ivory Coast"],
+  "Mali": ["Mauritania", "Algeria", "Niger", "Senegal", "Guinea", "Ivory Coast", "Burkina Faso"],
+  "Ivory Coast": ["Liberia", "Guinea", "Mali", "Burkina Faso", "Ghana"],
+  "Burkina Faso": ["Mali", "Ivory Coast", "Ghana", "Benin", "Niger"],
+  "Ghana": ["Ivory Coast", "Burkina Faso", "Togo"],
+  "Togo": ["Ghana", "Benin"],
+  "Benin": ["Togo", "Burkina Faso", "Niger", "Nigeria"],
+  "Nigeria": ["Benin", "Niger", "Chad", "Cameroon"],
+  "Niger": ["Algeria", "Libya", "Chad", "Nigeria", "Benin", "Burkina Faso", "Mali"],
+  "Chad": ["Libya", "Sudan", "Central African Republic", "Cameroon", "Nigeria", "Niger"],
+  "Cameroon": ["Nigeria", "Chad", "Central African Republic", "Gabon", "Republic of the Congo", "Equatorial Guinea"],
+  "Central African Republic": ["Chad", "Sudan", "South Sudan", "Democratic Republic of the Congo", "Republic of the Congo", "Cameroon"],
+  "Equatorial Guinea": ["Cameroon", "Gabon"],
+  "Gabon": ["Cameroon", "Equatorial Guinea", "Republic of the Congo"],
+  "Republic of the Congo": ["Central African Republic", "Democratic Republic of the Congo", "Angola", "Gabon", "Cameroon"],
+  "Democratic Republic of the Congo": ["Central African Republic", "South Sudan", "Uganda", "Rwanda", "Burundi", "Tanzania", "Zambia", "Angola", "Republic of the Congo"],
+  "Angola": ["Democratic Republic of the Congo", "Zambia", "Namibia"],
+  "Zambia": ["Democratic Republic of the Congo", "Tanzania", "Zimbabwe", "Botswana", "Namibia", "Angola"],
+  "Zimbabwe": ["Zambia", "Botswana", "Namibia", "Mozambique", "South Africa"],
+  "Botswana": ["Zambia", "Zimbabwe", "Namibia", "South Africa"],
+  "Namibia": ["Angola", "Zambia", "Botswana", "South Africa"],
+  "South Africa": ["Botswana", "Namibia", "Zimbabwe", "Mozambique", "Eswatini", "Lesotho"],
+  "Lesotho": ["South Africa"],
+  "Eswatini": ["South Africa", "Mozambique"],
+  "Mozambique": ["Tanzania", "Zimbabwe", "South Africa", "Eswatini", "Malawi"],
+  "Malawi": ["Tanzania", "Mozambique", "Zambia"],
+  "Tanzania": ["Kenya", "Uganda", "Democratic Republic of the Congo", "Zambia", "Malawi", "Mozambique"],
+  "Kenya": ["Tanzania", "Uganda", "Somalia", "Ethiopia"],
+  "Uganda": ["Kenya", "Democratic Republic of the Congo", "Rwanda", "South Sudan", "Tanzania"],
+  "Rwanda": ["Uganda", "Democratic Republic of the Congo", "Burundi", "Tanzania"],
+  "Burundi": ["Rwanda", "Democratic Republic of the Congo", "Tanzania"],
+  "Somalia": ["Kenya", "Ethiopia", "Djibouti"],
+  "Ethiopia": ["Sudan", "Eritrea", "Djibouti", "Somalia", "Kenya"],
+  "Eritrea": ["Sudan", "Ethiopia", "Djibouti"],
+  "Djibouti": ["Eritrea", "Ethiopia", "Somalia"],
+  "Mauritius": [],
+  "Seychelles": [],
+  "Comoros": [],
+  "Cabo Verde": [],
+  "São Tomé and Príncipe": [],
+  "Pakistan": ["Iran", "Afghanistan", "Tajikistan", "China", "India"],
+  "Afghanistan": ["Pakistan", "Tajikistan", "Uzbekistan", "Turkmenistan", "Iran"],
+  "Tajikistan": ["Afghanistan", "Pakistan", "Uzbekistan", "Kyrgyzstan", "China"],
+  "Kyrgyzstan": ["Tajikistan", "Uzbekistan", "Kazakhstan", "China"],
+  "Uzbekistan": ["Kazakhstan", "Kyrgyzstan", "Tajikistan", "Afghanistan", "Turkmenistan"],
+  "Turkmenistan": ["Kazakhstan", "Uzbekistan", "Afghanistan", "Iran"],
+  "Kazakhstan": ["Russia", "China", "Kyrgyzstan", "Uzbekistan", "Turkmenistan"],
+  "China": ["Russia", "Mongolia", "Kazakhstan", "Kyrgyzstan", "Tajikistan", "Pakistan", "Afghanistan", "India", "Nepal", "Bhutan", "Myanmar", "Laos", "Vietnam"],
+  "Mongolia": ["Russia", "China"],
+  "India": ["Pakistan", "China", "Nepal", "Bhutan", "Bangladesh", "Myanmar"],
+  "Nepal": ["China", "India"],
+  "Bhutan": ["China", "India"],
+  "Bangladesh": ["India", "Myanmar"],
+  "Myanmar": ["China", "India", "Bangladesh", "Thailand", "Laos"],
+  "Thailand": ["Myanmar", "Laos", "Cambodia", "Malaysia"],
+  "Laos": ["China", "Vietnam", "Myanmar", "Thailand", "Cambodia"],
+  "Vietnam": ["China", "Laos", "Cambodia"],
+  "Cambodia": ["Thailand", "Laos", "Vietnam"],
+  "Malaysia": ["Thailand"],
+  "Brunei": ["Malaysia"],
+  "Singapore": ["Malaysia"],
+  "Indonesia": [],
+  "East Timor": [],
+  "Philippines": [],
+  "Japan": [],
+  "South Korea": ["North Korea"],
+  "North Korea": ["China", "Russia", "South Korea"],
+  "Taiwan": [],
+  "Hong Kong": ["China"],
+  "Macau": ["China"],
+  "Thailand": ["Myanmar", "Laos", "Cambodia", "Malaysia"],
+  "Sri Lanka": [],
+  "Maldives": [],
+  "Nepal": ["China", "India"],
+  "United States": ["Canada", "Mexico"],
+  "Canada": ["United States"],
+  "Mexico": ["United States", "Guatemala", "Belize"],
+  "Guatemala": ["Mexico", "Belize", "Honduras", "El Salvador"],
+  "Belize": ["Mexico", "Guatemala"],
+  "Honduras": ["Guatemala", "El Salvador", "Nicaragua"],
+  "El Salvador": ["Guatemala", "Honduras"],
+  "Nicaragua": ["Honduras", "Costa Rica"],
+  "Costa Rica": ["Nicaragua", "Panama"],
+  "Panama": ["Costa Rica", "Colombia"],
+  "Colombia": ["Panama", "Venezuela", "Guyana", "Brazil", "Peru", "Ecuador"],
+  "Venezuela": ["Colombia", "Guyana", "Brazil"],
+  "Guyana": ["Venezuela", "Suriname", "Brazil"],
+  "Suriname": ["Guyana", "Brazil", "French Guiana"],
+  "French Guiana": ["Suriname", "Brazil"],
+  "Ecuador": ["Colombia", "Peru"],
+  "Peru": ["Ecuador", "Colombia", "Brazil", "Bolivia", "Chile"],
+  "Brazil": ["Venezuela", "Guyana", "Suriname", "French Guiana", "Colombia", "Peru", "Bolivia", "Paraguay", "Argentina", "Uruguay"],
+  "Bolivia": ["Peru", "Brazil", "Paraguay", "Argentina", "Chile"],
+  "Paraguay": ["Brazil", "Bolivia", "Argentina"],
+  "Argentina": ["Chile", "Bolivia", "Paraguay", "Brazil", "Uruguay"],
+  "Chile": ["Peru", "Bolivia", "Argentina"],
+  "Uruguay": ["Brazil", "Argentina"],
+  "Barbados": [],
+  "Trinidad and Tobago": [],
+  "Dominica": [],
+  "Grenada": [],
+  "Jamaica": [],
+  "Cuba": [],
+  "Dominican Republic": [],
+  "Haiti": ["Dominican Republic"],
+  "Dominican Republic": ["Haiti"],
+  "Puerto Rico": [],
+  "Antigua and Barbuda": [],
+  "Saint Kitts and Nevis": [],
+  "Bahamas": [],
+  "Belize": ["Mexico", "Guatemala"],
+};
+
 const COUNTRIES = [
   { name: "Afghanistan", wiki: "Afghanistan", cap: [34.5281, 69.1723], locs: [["Kabul", 34.5281, 69.1723, "capital", ["Band-e Amir National Park", 34.8167, 67.0167, "nature"]], ["Kandahar", 31.6133, 65.7073, "former"], ["Mazar-i-Sharif", 36.7069, 67.1124, "city"], ["Herat", 34.3482, 62.2041, "city"]] },
   { name: "Albania", wiki: "Albania", cap: [41.3317, 19.8319], locs: [["Tirana", 41.3317, 19.8319, "capital", ["Valbona Valley National Park", 41.8767, 20.1867, "nature"]], ["Durrës", 41.3246, 19.4565, "former"], ["Gjirokastër", 40.0758, 20.1389, "unicode"], ["Berat", 40.7058, 19.9522, "unicode"], ["Shkodër", 42.0683, 19.5126, "city"]] },
@@ -221,6 +414,15 @@ function getDailyPuzzle() {
   const locIdx = getPuzzleForDate(utcDateStr + "loc") % country.locs.length;
   const loc = country.locs[locIdx];
   return { country, loc, dateStr: utcDateStr };
+}
+
+function getRandomPuzzle() {
+  if (COUNTRIES.length === 0) return null;
+  const countryIdx = Math.floor(Math.random() * COUNTRIES.length);
+  const country = COUNTRIES[countryIdx];
+  const locIdx = Math.floor(Math.random() * country.locs.length);
+  const loc = country.locs[locIdx];
+  return { country, loc, dateStr: null };
 }
 
 function useWikiImages(locationName) {
@@ -562,7 +764,38 @@ export default function WITWorld() {
     // Calculate percentage: max distance ~20000km (halfway around Earth)
     const maxDist = 20000;
     const percentage = Math.max(0, Math.round(100 - (dist / maxDist) * 100));
-    return { dist, dir, percentage };
+    
+    // Determine proximity clue using actual border data
+    let proximityClue = "⛔️ wrong continent";
+    let proximityEmoji = "⛔️";
+    
+    // Simple continent mapping (lat/lon ranges)
+    function getContinent(lat, lng) {
+      if (lat > 15 && lng > -20 && lng < 55) return "Africa";
+      if (lat > 0 && lng > -20 && lng < 145) return "Europe";
+      if (lat > 10 && lng > 60 && lng < 155) return "Asia";
+      if (lat < 0 && lng > 113 && lng < 180) return "Oceania";
+      if (lat > -55 && lat < 0) return "South America";
+      if (lat > 15 && lng > -170 && lng < -50) return "North America";
+      return "Unknown";
+    }
+    
+    const targetContinent = getContinent(loc[1], loc[2]);
+    const guessContinent = getContinent(gc.cap[0], gc.cap[1]);
+    
+    if (guessContinent === targetContinent) {
+      proximityClue = "🆗 correct continent";
+      proximityEmoji = "🆗";
+      
+      // Check if they actually share a border
+      const borders = BORDERS[country.name] || [];
+      if (borders.includes(gc.name)) {
+        proximityClue = "🤝 share a border";
+        proximityEmoji = "🤝";
+      }
+    }
+    
+    return { dist, dir, percentage, proximityClue, proximityEmoji };
   }
 
   function shareResults() {
@@ -750,7 +983,11 @@ export default function WITWorld() {
                       ? `hsl(${hint.percentage * 1.2}, 100%, 50%)` 
                       : `hsl(${120 - (hint.percentage - 70) * 1.2}, 100%, 50%)`
                   }}>
-                    {hint.percentage}% ({hint.dist}km)
+                    {hint.percentage}% {hint.dir === "N" ? "⬆️" : hint.dir === "S" ? "⬇️" : hint.dir === "E" ? "➡️" : hint.dir === "W" ? "⬅️" :
+                     hint.dir === "NE" ? "↗️" : hint.dir === "NW" ? "↖️" : hint.dir === "SE" ? "↘️" : "↙️"} {hint.dist}km
+                  </span>
+                  <span style={{ fontSize: 12, color: "#999", whiteSpace: "nowrap" }}>
+                    ({hint.proximityClue})
                   </span>
                 </div>
               )}
@@ -813,6 +1050,26 @@ export default function WITWorld() {
               }}
             >
               {copied ? "✓ Copied!" : "📤 Share"}
+            </button>
+            <button
+              onClick={() => {
+                const newPuzzle = getRandomPuzzle();
+                if (newPuzzle) {
+                  setPuzzle(newPuzzle);
+                  setGuesses(Array(6).fill(""));
+                  setSubmitted(Array(6).fill(false));
+                  setCurrentRow(0);
+                  setWon(false);
+                  setLost(false);
+                }
+              }}
+              style={{
+                padding: "10px 18px", borderRadius: 8,
+                background: "#6366f1", color: "#fff", border: "none",
+                fontWeight: 700, fontSize: 13, cursor: "pointer"
+              }}
+            >
+              🎮 New Game
             </button>
           </div>
         </div>
