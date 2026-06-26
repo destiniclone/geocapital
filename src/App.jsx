@@ -469,10 +469,17 @@ export default function WITWorld() {
       const now = new Date();
       const today = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
       const stored = localStorage.getItem("witworld_puzzle_date");
-      if (stored === today) {
-        const p = localStorage.getItem("witworld_puzzle");
-        if (p) return JSON.parse(p);
+      
+      // If stored date doesn't match today, it's a new day - clear old data
+      if (stored !== today) {
+        localStorage.removeItem("witworld_puzzle");
+        localStorage.removeItem("witworld_played_dates");
       }
+      
+      const p = localStorage.getItem("witworld_puzzle");
+      if (p) return JSON.parse(p);
+      
+      // Generate new puzzle for today
       const newPuzzle = getDailyPuzzle();
       localStorage.setItem("witworld_puzzle_date", today);
       localStorage.setItem("witworld_puzzle", JSON.stringify(newPuzzle));
