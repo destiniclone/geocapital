@@ -574,14 +574,16 @@ export default function WITWorld() {
       const fetchWikiSummary = async () => {
         try {
           const response = await fetch(
-            `https://simple.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(country.wiki)}&explaintext=true&exintro=true&origin=*`
+            `https://simple.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(loc[0])}&explaintext=true&exintro=true&origin=*`
           );
           const data = await response.json();
           const pages = data.query.pages;
           const page = pages[Object.keys(pages)[0]];
           if (page && page.extract) {
-            const text = page.extract.split('\n')[0]; // Get first paragraph
-            setWikiSummary(text);
+            // Get everything up to the first double newline (first paragraph)
+            const paragraphs = page.extract.split('\n\n');
+            const firstParagraph = paragraphs[0] || page.extract;
+            setWikiSummary(firstParagraph);
           }
         } catch (e) {
           console.error("Error fetching Wikipedia:", e);
@@ -725,7 +727,7 @@ export default function WITWorld() {
           <span>🏛️ unesco</span>
           <span>🌿 nature</span>
         </div>
-        <p style={{ margin: 0, color: "#666", fontSize: 13 }}>
+        <p style={{ margin: 0, color: "#444", fontSize: 12, letterSpacing: 2, fontWeight: 700, textTransform: "uppercase" }}>
           guess the country
         </p>
       </div>
@@ -931,7 +933,7 @@ export default function WITWorld() {
 
             <div>
               <div style={{ fontSize: 12, fontWeight: 700, color: "#aaa", marginBottom: 8 }}>GUESS DISTRIBUTION</div>
-              {[1, 2, 3, 4, 5, 6, 7].map(i => {
+              {[1, 2, 3, 4, 5, 6].map(i => {
                 const count = stats.guesses[i - 1] || 0;
                 const maxCount = Math.max(...stats.guesses, 1);
                 const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
