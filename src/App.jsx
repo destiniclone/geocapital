@@ -972,10 +972,6 @@ export default function WITWorld() {
                   background: "#1e1e2e", border: "1px solid #333", borderRadius: 8,
                   padding: "6px 10px", fontSize: 12, minWidth: 0
                 }}>
-                  <span>
-                    {hint.dir === "N" ? "⬆️" : hint.dir === "S" ? "⬇️" : hint.dir === "E" ? "➡️" : hint.dir === "W" ? "⬅️" :
-                     hint.dir === "NE" ? "↗️" : hint.dir === "NW" ? "↖️" : hint.dir === "SE" ? "↘️" : "↙️"}
-                  </span>
                   <span style={{ 
                     fontWeight: 700, 
                     whiteSpace: "nowrap",
@@ -984,10 +980,7 @@ export default function WITWorld() {
                       : `hsl(${120 - (hint.percentage - 70) * 1.2}, 100%, 50%)`
                   }}>
                     {hint.percentage}% {hint.dir === "N" ? "⬆️" : hint.dir === "S" ? "⬇️" : hint.dir === "E" ? "➡️" : hint.dir === "W" ? "⬅️" :
-                     hint.dir === "NE" ? "↗️" : hint.dir === "NW" ? "↖️" : hint.dir === "SE" ? "↘️" : "↙️"} {hint.dist}km
-                  </span>
-                  <span style={{ fontSize: 12, color: "#999", whiteSpace: "nowrap" }}>
-                    ({hint.proximityClue})
+                     hint.dir === "NE" ? "↗️" : hint.dir === "NW" ? "↖️" : hint.dir === "SE" ? "↘️" : "↙️"} {hint.dist}km {hint.proximityEmoji}
                   </span>
                 </div>
               )}
