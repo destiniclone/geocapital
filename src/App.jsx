@@ -5,58 +5,34 @@ import { useState, useMemo, useRef, useEffect } from "react";
 // You can edit that file to add, remove, or modify locations
 let COUNTRIES = [];
 
-async function loadCountriesFromCSV() {
+async function loadCountriesFromJSON() {
   try {
-    const response = await fetch('/locations.csv');
-    const csv = await response.text();
-    const lines = csv.trim().split('\n');
-    
-    const countriesMap = new Map();
-    
-    for (let i = 1; i < lines.length; i++) {
-      // Parse CSV with proper quote handling
-      const cols = [];
-      let current = '';
-      let inQuotes = false;
-      for (let j = 0; j < lines[i].length; j++) {
-        const char = lines[i][j];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          cols.push(current.trim());
-          current = '';
-        } else {
-          current += char;
-        }
-      }
-      cols.push(current.trim());
-      
-      const country = cols[0];
-      const location = cols[1];
-      const lat = parseFloat(cols[2]);
-      const lng = parseFloat(cols[3]);
-      const type = cols[4];
-      const wiki = cols[5];
-      
-      if (!country || !location) continue; // Skip empty rows
-      
-      if (!countriesMap.has(country)) {
-        countriesMap.set(country, { name: country, wiki: wiki, cap: null, locs: [] });
-      }
-      
-      const countryObj = countriesMap.get(country);
-      
-      if (type === 'capital') {
-        countryObj.cap = [lat, lng];
-      }
-      
-      countryObj.locs.push([location, lat, lng, type]);
+    const response = await fetch('/locations.json');
+    if (!response.ok) {
+      console.error('Failed to fetch JSON:', response.status, response.statusText);
+      return false;
     }
     
-    COUNTRIES = Array.from(countriesMap.values());
+    const data = await response.json();
+    if (!data.countries || data.countries.length === 0) {
+      console.error('No countries in JSON');
+      return false;
+    }
+    
+    // Convert JSON format to internal format
+    COUNTRIES = data.countries.map(country => ({
+      name: country.name,
+      wiki: country.wiki,
+      cap: country.capital,
+      locs: [
+        ...country.locations.map(loc => [loc.name, loc.lat, loc.lng, loc.type])
+      ]
+    }));
+    
+    console.log(`Loaded ${COUNTRIES.length} countries, ${COUNTRIES.reduce((sum, c) => sum + c.locs.length, 0)} locations`);
     return true;
   } catch (e) {
-    console.error("Error loading locations.csv:", e);
+    console.error("Error loading locations.json:", e);
     return false;
   }
 }
@@ -327,33 +303,39 @@ export default function WITWorld() {
   const [showConfetti, setShowConfetti] = useState(false);
   const statsSavedRef = useRef(false);
 
-  // Load CSV and initialize puzzle
+  // Load JSON and initialize puzzle
   useEffect(() => {
     async function initializeGame() {
-      const loaded = await loadCountriesFromCSV();
-      if (loaded && COUNTRIES.length > 0) {
-        try {
-          const now = new Date();
-          const today = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
-          const stored = localStorage.getItem("witworld_puzzle_date");
-          if (stored === today) {
-            const p = localStorage.getItem("witworld_puzzle");
-            if (p) {
-              setPuzzle(JSON.parse(p));
-              setLoading(false);
-              return;
-            }
-          }
-          const newPuzzle = getDailyPuzzle();
-          localStorage.setItem("witworld_puzzle_date", today);
-          localStorage.setItem("witworld_puzzle", JSON.stringify(newPuzzle));
-          setPuzzle(newPuzzle);
-        } catch (e) {
-          console.error("Error initializing game:", e);
-          setPuzzle(getDailyPuzzle());
+      try {
+        const loaded = await loadCountriesFromJSON();
+        if (!loaded || COUNTRIES.length === 0) {
+          console.warn("Failed to load JSON, showing error");
+          setLoading(false);
+          return;
         }
+        
+        const now = new Date();
+        const today = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+        const stored = localStorage.getItem("witworld_puzzle_date");
+        
+        if (stored === today) {
+          const p = localStorage.getItem("witworld_puzzle");
+          if (p) {
+            setPuzzle(JSON.parse(p));
+            setLoading(false);
+            return;
+          }
+        }
+        
+        const newPuzzle = getDailyPuzzle();
+        localStorage.setItem("witworld_puzzle_date", today);
+        localStorage.setItem("witworld_puzzle", JSON.stringify(newPuzzle));
+        setPuzzle(newPuzzle);
+        setLoading(false);
+      } catch (e) {
+        console.error("Error initializing game:", e);
+        setLoading(false);
       }
-      setLoading(false);
     }
     initializeGame();
   }, []);
