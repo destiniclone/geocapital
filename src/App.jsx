@@ -892,31 +892,51 @@ export default function WITWorld() {
 
       {(won || lost) && (
         <div style={{ display: "flex", flexDirection: "column", gap: 20, marginTop: 28, width: "100%", maxWidth: 520 }}>
+          {/* Answer Card */}
+          <div style={{
+            background: "linear-gradient(135deg, #1e1e2e, #16162a)",
+            border: "1px solid #6366f1", borderRadius: 16,
+            padding: "24px", textAlign: "center"
+          }}>
+            <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>THE ANSWER WAS</div>
+            <h2 style={{ margin: "8px 0", fontSize: 28, fontWeight: 800, color: "#f8f8f2" }}>{country.name}</h2>
+            <div style={{ fontSize: 13, color: "#aaa", marginBottom: 16 }}>
+              {loc[3] === "capital" ? "🏛️ Capital" : loc[3] === "former" ? "🕰️ Former Capital" : loc[3] === "city" ? "🌆 City" : loc[3] === "unicode" ? "🏛️ UNESCO" : "🌿 Nature"}
+              {" • "}
+              {loc[0]}
+            </div>
+            <button
+              onClick={() => shareResults()}
+              style={{
+                padding: "10px 24px", borderRadius: 8,
+                background: copied ? "#059669" : "#10b981", color: "#fff", border: "none",
+                fontWeight: 700, fontSize: 13, cursor: "pointer"
+              }}
+            >
+              {copied ? "✓ Copied!" : "📤 Share"}
+            </button>
+          </div>
+
           {/* Wikipedia Paragraph Card */}
           <div style={{
             background: "linear-gradient(135deg, #1e1e2e, #16162a)",
             border: "1px solid #6366f1", borderRadius: 16,
             padding: "20px", textAlign: "center"
           }}>
-            <div style={{ fontSize: 12, color: "#666", marginBottom: 12, fontWeight: 700 }}>THE ANSWER WAS {country.name.toUpperCase()}</div>
-            <div style={{ fontSize: 13, color: "#aaa", marginBottom: 16 }}>
-              {loc[3] === "capital" ? "🏛️ Capital" : loc[3] === "former" ? "🕰️ Former Capital" : loc[3] === "city" ? "🌆 City" : loc[3] === "unicode" ? "🏛️ UNESCO" : "🌿 Nature"}
-              {" • "}
-              {loc[0]}
-            </div>
+            <div style={{ fontSize: 12, color: "#666", marginBottom: 12, fontWeight: 700 }}>ABOUT {country.name.toUpperCase()}</div>
             <div style={{ fontSize: 13, color: "#ccc", lineHeight: 1.6, marginBottom: 16, textAlign: "left" }}>
               {wikiSummary ? wikiSummary : "Loading..."}
             </div>
-            <button
-              onClick={() => shareResults()}
+            <a href={`https://simple.wikipedia.org/wiki/${country.wiki}`} target="_blank" rel="noopener noreferrer"
               style={{
+                display: "inline-block",
                 padding: "8px 16px", borderRadius: 8,
-                background: copied ? "#059669" : "#10b981", color: "#fff", border: "none",
+                background: "#6366f1", color: "#fff", textDecoration: "none",
                 fontWeight: 700, fontSize: 12, cursor: "pointer"
               }}
             >
-              {copied ? "✓ Copied!" : "📤 Share"}
-            </button>
+              📖 Read on Wikipedia
+            </a>
           </div>
 
           {/* Stats Card */}
