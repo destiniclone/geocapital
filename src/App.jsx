@@ -1191,9 +1191,24 @@ export default function WITWorld() {
 
               {isCorrect && (
                 <div style={{
-                  flexShrink: 0, background: "#4ade8022", border: "1px solid #4ade80",
-                  borderRadius: 8, padding: "6px 10px", fontSize: 12, color: "#4ade80", fontWeight: 700
-                }}>✓</div>
+                  display: "flex", alignItems: "center", gap: 5, flexShrink: 0,
+                  background: "#4ade8022", border: "1px solid #4ade80", borderRadius: 8,
+                  padding: "6px 10px", fontSize: 12, minWidth: 0
+                }}>
+                  <span style={{ whiteSpace: "nowrap", color: "#4ade80" }}>
+                    📍
+                  </span>
+                  <span style={{ 
+                    fontWeight: 700, 
+                    whiteSpace: "nowrap",
+                    color: "#4ade80"
+                  }}>
+                    100%
+                  </span>
+                  <span style={{ whiteSpace: "nowrap", color: "#4ade80" }}>
+                    0km ✅
+                  </span>
+                </div>
               )}
             </div>
           );
