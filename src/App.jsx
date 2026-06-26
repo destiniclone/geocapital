@@ -10,18 +10,35 @@ async function loadCountriesFromCSV() {
     const response = await fetch('/locations.csv');
     const csv = await response.text();
     const lines = csv.trim().split('\n');
-    const headers = lines[0].split(',');
     
     const countriesMap = new Map();
     
     for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(',');
+      // Parse CSV with proper quote handling
+      const cols = [];
+      let current = '';
+      let inQuotes = false;
+      for (let j = 0; j < lines[i].length; j++) {
+        const char = lines[i][j];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          cols.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      cols.push(current.trim());
+      
       const country = cols[0];
       const location = cols[1];
       const lat = parseFloat(cols[2]);
       const lng = parseFloat(cols[3]);
       const type = cols[4];
       const wiki = cols[5];
+      
+      if (!country || !location) continue; // Skip empty rows
       
       if (!countriesMap.has(country)) {
         countriesMap.set(country, { name: country, wiki: wiki, cap: null, locs: [] });
