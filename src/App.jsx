@@ -610,14 +610,6 @@ export default function WITWorld() {
     }
   }
 
-  function resetGame() {
-    // Clear all game state
-    localStorage.removeItem("witworld_puzzle_date");
-    localStorage.removeItem("witworld_puzzle");
-    // Reload the page to get a new daily puzzle
-    window.location.reload();
-  }
-
   function getHint(idx) {
     if (!submitted[idx] || guesses[idx] === country.name) return null;
     const gc = COUNTRIES.find(c => c.name === guesses[idx]);
@@ -968,30 +960,6 @@ export default function WITWorld() {
       }}>
         EVERY DAY A NEW GAME
       </div>
-
-      <button
-        onClick={() => {
-          if (confirm("Reset today's game? This will clear your progress.")) {
-            resetGame();
-          }
-        }}
-        style={{
-          marginTop: 20, padding: "8px 16px", borderRadius: 8,
-          background: "#333", color: "#888", border: "1px solid #444",
-          fontWeight: 700, fontSize: 12, cursor: "pointer",
-          transition: "all 0.2s"
-        }}
-        onMouseEnter={(e) => {
-          e.target.style.background = "#444";
-          e.target.style.color = "#aaa";
-        }}
-        onMouseLeave={(e) => {
-          e.target.style.background = "#333";
-          e.target.style.color = "#888";
-        }}
-      >
-        🔄 Reset Game
-      </button>
     </div>
   );
 }
