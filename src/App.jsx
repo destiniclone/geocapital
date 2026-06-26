@@ -190,6 +190,27 @@ const COUNTRIES = [
   { name: "Zimbabwe", wiki: "Zimbabwe", cap: [-17.8252, 31.0335], locs: [["Harare", -17.8252, 31.0335, "capital", ["Hwange National Park", -18.5, 26.5, "nature"]], ["Bulawayo", -20.1325, 28.6264, "city"]] },
 ];
 
+// Continent mapping by country
+const CONTINENTS = {
+  // North America
+  "United States": "North America", "Canada": "North America", "Mexico": "North America", "Guatemala": "North America", "Belize": "North America", "Honduras": "North America", "El Salvador": "North America", "Nicaragua": "North America", "Costa Rica": "North America", "Panama": "North America",
+  
+  // South America
+  "Colombia": "South America", "Venezuela": "South America", "Guyana": "South America", "Suriname": "South America", "French Guiana": "South America", "Ecuador": "South America", "Peru": "South America", "Brazil": "South America", "Bolivia": "South America", "Paraguay": "South America", "Chile": "South America", "Argentina": "South America", "Uruguay": "South America",
+  
+  // Europe
+  "Iceland": "Europe", "Ireland": "Europe", "United Kingdom": "Europe", "Portugal": "Europe", "Spain": "Europe", "France": "Europe", "Belgium": "Europe", "Netherlands": "Europe", "Luxembourg": "Europe", "Germany": "Europe", "Denmark": "Europe", "Sweden": "Europe", "Norway": "Europe", "Finland": "Europe", "Estonia": "Europe", "Latvia": "Europe", "Lithuania": "Europe", "Poland": "Europe", "Czech Republic": "Europe", "Slovakia": "Europe", "Austria": "Europe", "Switzerland": "Europe", "Liechtenstein": "Europe", "Italy": "Europe", "Slovenia": "Europe", "Croatia": "Europe", "Bosnia and Herzegovina": "Europe", "Serbia": "Europe", "Montenegro": "Europe", "Kosovo": "Europe", "Albania": "Europe", "North Macedonia": "Europe", "Greece": "Europe", "Romania": "Europe", "Bulgaria": "Europe", "Hungary": "Europe", "Moldova": "Europe", "Ukraine": "Europe", "Belarus": "Europe", "Russia": "Europe", "Andorra": "Europe", "Monaco": "Europe", "San Marino": "Europe", "Vatican City": "Europe", "Malta": "Europe", "Cyprus": "Europe",
+  
+  // Africa
+  "Morocco": "Africa", "Algeria": "Africa", "Tunisia": "Africa", "Libya": "Africa", "Egypt": "Africa", "Sudan": "Africa", "South Sudan": "Africa", "Eritrea": "Africa", "Ethiopia": "Africa", "Djibouti": "Africa", "Somalia": "Africa", "Kenya": "Africa", "Uganda": "Africa", "Tanzania": "Africa", "Rwanda": "Africa", "Burundi": "Africa", "Democratic Republic of the Congo": "Africa", "Republic of the Congo": "Africa", "Central African Republic": "Africa", "Chad": "Africa", "Cameroon": "Africa", "Equatorial Guinea": "Africa", "Gabon": "Africa", "São Tomé and Príncipe": "Africa", "Angola": "Africa", "Zambia": "Africa", "Zimbabwe": "Africa", "Malawi": "Africa", "Mozambique": "Africa", "Botswana": "Africa", "Namibia": "Africa", "South Africa": "Africa", "Lesotho": "Africa", "Eswatini": "Africa", "Mali": "Africa", "Mauritania": "Africa", "Senegal": "Africa", "Gambia": "Africa", "Guinea-Bissau": "Africa", "Guinea": "Africa", "Sierra Leone": "Africa", "Liberia": "Africa", "Ivory Coast": "Africa", "Ghana": "Africa", "Togo": "Africa", "Benin": "Africa", "Niger": "Africa", "Burkina Faso": "Africa", "Western Sahara": "Africa", "Cabo Verde": "Africa", "Mauritius": "Africa", "Seychelles": "Africa", "Comoros": "Africa",
+  
+  // Asia
+  "Turkey": "Asia", "Syria": "Asia", "Lebanon": "Asia", "Israel": "Asia", "Palestine": "Asia", "Jordan": "Asia", "Iraq": "Asia", "Iran": "Asia", "Saudi Arabia": "Asia", "Yemen": "Asia", "Oman": "Asia", "United Arab Emirates": "Asia", "Qatar": "Asia", "Bahrain": "Asia", "Kuwait": "Asia", "Pakistan": "Asia", "Afghanistan": "Asia", "Tajikistan": "Asia", "Uzbekistan": "Asia", "Turkmenistan": "Asia", "Kazakhstan": "Asia", "Kyrgyzstan": "Asia", "India": "Asia", "Nepal": "Asia", "Bhutan": "Asia", "Bangladesh": "Asia", "Sri Lanka": "Asia", "Maldives": "Asia", "Myanmar": "Asia", "Thailand": "Asia", "Laos": "Asia", "Cambodia": "Asia", "Vietnam": "Asia", "Malaysia": "Asia", "Singapore": "Asia", "Brunei": "Asia", "Indonesia": "Asia", "East Timor": "Asia", "Philippines": "Asia", "China": "Asia", "Mongolia": "Asia", "South Korea": "Asia", "North Korea": "Asia", "Japan": "Asia", "Taiwan": "Asia", "Hong Kong": "Asia", "Macau": "Asia",
+  
+  // Oceania
+  "Australia": "Oceania", "New Zealand": "Oceania", "Fiji": "Oceania", "Samoa": "Oceania", "Vanuatu": "Oceania", "Solomon Islands": "Oceania", "Kiribati": "Oceania", "Nauru": "Oceania", "Palau": "Oceania", "Tonga": "Oceania", "Tuvalu": "Oceania", "Marshall Islands": "Oceania", "Micronesia": "Oceania", "Papua New Guinea": "Oceania",
+};
+
 const toRad = d => (d * Math.PI) / 180;
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
@@ -469,6 +490,7 @@ export default function WITWorld() {
   const [showStats, setShowStats] = useState(false);
   const [alreadyPlayed, setAlreadyPlayed] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [wikiSummary, setWikiSummary] = useState("");
   const statsSavedRef = useRef(false);
   const { country, loc } = puzzle;
   const { images, loading: imgLoading } = useWikiImages(loc[0]);
@@ -546,6 +568,30 @@ export default function WITWorld() {
     }
   }, [won, lost]);
 
+  // Fetch Wikipedia summary when game ends
+  useEffect(() => {
+    if ((won || lost) && country) {
+      const fetchWikiSummary = async () => {
+        try {
+          const response = await fetch(
+            `https://simple.wikipedia.org/w/api.php?action=query&format=json&prop=extracts&titles=${encodeURIComponent(country.wiki)}&explaintext=true&exintro=true&origin=*`
+          );
+          const data = await response.json();
+          const pages = data.query.pages;
+          const page = pages[Object.keys(pages)[0]];
+          if (page && page.extract) {
+            const text = page.extract.split('\n')[0]; // Get first paragraph
+            setWikiSummary(text);
+          }
+        } catch (e) {
+          console.error("Error fetching Wikipedia:", e);
+          setWikiSummary("Unable to load summary.");
+        }
+      };
+      fetchWikiSummary();
+    }
+  }, [won, lost, country]);
+
   function handleGuess(idx) {
     const guess = guesses[idx];
     if (!guess || submitted[idx]) return;
@@ -568,10 +614,19 @@ export default function WITWorld() {
     if (!gc) return null;
     const dist = Math.round(haversine(loc[1], loc[2], gc.cap[0], gc.cap[1]));
     const dir = bearing(gc.cap[0], gc.cap[1], loc[1], loc[2]);
-    // Calculate percentage: max distance ~20000km (halfway around Earth)
     const maxDist = 20000;
     const percentage = Math.max(0, Math.round(100 - (dist / maxDist) * 100));
-    return { dist, dir, percentage };
+    
+    // Determine continent emoji
+    const targetContinent = CONTINENTS[country.name] || "Unknown";
+    const guessContinent = CONTINENTS[gc.name] || "Unknown";
+    let proximityEmoji = "⛔️"; // wrong continent
+    
+    if (guessContinent === targetContinent) {
+      proximityEmoji = "🆗"; // correct continent
+    }
+    
+    return { dist, dir, percentage, proximityEmoji };
   }
 
   function shareResults() {
@@ -762,7 +817,7 @@ export default function WITWorld() {
                     {hint.percentage}%
                   </span>
                   <span style={{ whiteSpace: "nowrap", color: "#fff" }}>
-                    {hint.dist}km ⛔️
+                    {hint.dist}km {hint.proximityEmoji}
                   </span>
                 </div>
               )}
@@ -831,76 +886,111 @@ export default function WITWorld() {
             >
               {copied ? "✓ Copied!" : "📤 Share"}
             </button>
-            <button
-              onClick={() => {
-                const newPuzzle = getRandomPuzzle();
-                if (newPuzzle) {
-                  setPuzzle(newPuzzle);
-                  setGuesses(Array(6).fill(""));
-                  setSubmitted(Array(6).fill(false));
-                  setCurrentRow(0);
-                  setWon(false);
-                  setLost(false);
-                }
-              }}
-              style={{
-                padding: "10px 18px", borderRadius: 8,
-                background: "#6366f1", color: "#fff", border: "none",
-                fontWeight: 700, fontSize: 13, cursor: "pointer"
-              }}
-            >
-              🎮 New Game
-            </button>
           </div>
         </div>
       )}
 
       {(won || lost) && (
-        <div style={{
-          background: "linear-gradient(135deg, #1e1e2e, #16162a)",
-          border: "1px solid #6366f1", borderRadius: 16,
-          overflow: "hidden", marginTop: 28, width: "100%", maxWidth: 520,
-          padding: "20px 24px"
-        }}>
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginBottom: 16 }}>
-            <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#f8f8f2" }}>Your Stats</h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, marginTop: 28, width: "100%", maxWidth: 520 }}>
+          {/* Answer Card */}
+          <div style={{
+            background: "linear-gradient(135deg, #1e1e2e, #16162a)",
+            border: "1px solid #6366f1", borderRadius: 16,
+            padding: "24px", textAlign: "center"
+          }}>
+            <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>THE ANSWER WAS</div>
+            <h2 style={{ margin: "8px 0", fontSize: 28, fontWeight: 800, color: "#f8f8f2" }}>{country.name}</h2>
+            <div style={{ fontSize: 13, color: "#aaa", marginBottom: 16 }}>
+              {loc[3] === "capital" ? "🏛️ Capital" : loc[3] === "former" ? "🕰️ Former Capital" : loc[3] === "city" ? "🌆 City" : loc[3] === "unicode" ? "🏛️ UNESCO" : "🌿 Nature"}
+              {" • "}
+              {loc[0]}
+            </div>
+            <button
+              onClick={() => shareResults()}
+              style={{
+                padding: "10px 24px", borderRadius: 8,
+                background: copied ? "#059669" : "#10b981", color: "#fff", border: "none",
+                fontWeight: 700, fontSize: 13, cursor: "pointer"
+              }}
+            >
+              {copied ? "✓ Copied!" : "📤 Share"}
+            </button>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-            <div style={{ background: "#111118", padding: 12, borderRadius: 8, textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#6366f1" }}>{stats.games}</div>
-              <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>GAMES PLAYED</div>
+          {/* Wikipedia Paragraph Card */}
+          <div style={{
+            background: "linear-gradient(135deg, #1e1e2e, #16162a)",
+            border: "1px solid #333", borderRadius: 16,
+            padding: "20px"
+          }}>
+            <div style={{ fontSize: 12, color: "#666", marginBottom: 12, fontWeight: 700 }}>ABOUT {country.name.toUpperCase()}</div>
+            <div style={{ fontSize: 13, color: "#ccc", lineHeight: 1.6, marginBottom: 16 }}>
+              {wikiSummary ? wikiSummary : "Loading..."}
             </div>
-            <div style={{ background: "#111118", padding: 12, borderRadius: 8, textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 900, color: "#4ade80" }}>
-                {stats.games > 0 ? Math.round((stats.wins / stats.games) * 100) : 0}%
+            <a href={`https://simple.wikipedia.org/wiki/${country.wiki}`} target="_blank" rel="noopener noreferrer"
+              style={{
+                display: "inline-block",
+                padding: "8px 16px", borderRadius: 8,
+                background: "#6366f1", color: "#fff", textDecoration: "none",
+                fontWeight: 700, fontSize: 12, cursor: "pointer"
+              }}
+            >
+              📖 Read on Wikipedia
+            </a>
+          </div>
+
+          {/* Stats Card */}
+          <div style={{
+            background: "linear-gradient(135deg, #1e1e2e, #16162a)",
+            border: "1px solid #6366f1", borderRadius: 16,
+            overflow: "hidden", padding: "20px 24px"
+          }}>
+            <div style={{ display: "flex", justifyContent: "center", alignItems: "center", marginBottom: 16 }}>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#f8f8f2" }}>Your Stats</h2>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+              <div style={{ background: "#111118", padding: 12, borderRadius: 8, textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: "#6366f1" }}>{stats.games}</div>
+                <div style={{ fontSize: 10, color: "#666", marginTop: 4 }}>GAMES</div>
               </div>
-              <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>WIN RATE</div>
-            </div>
-          </div>
-
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#aaa", marginBottom: 8 }}>GUESS DISTRIBUTION</div>
-            {[1, 2, 3, 4, 5, 6].map(i => {
-              const count = stats.guesses[i - 1] || 0;
-              const maxCount = Math.max(...stats.guesses, 1);
-              const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
-              return (
-                <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#aaa", width: 20 }}>{i}</span>
-                  <div style={{
-                    flex: 1, height: 20, background: "#1a1a1a", borderRadius: 4, overflow: "hidden"
-                  }}>
-                    <div style={{
-                      width: `${percent}%`, height: "100%",
-                      background: i === 1 ? "#4ade80" : i <= 3 ? "#60a5fa" : "#fb923c",
-                      transition: "width 0.3s"
-                    }} />
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#aaa", width: 20, textAlign: "right" }}>{count}</span>
+              <div style={{ background: "#111118", padding: 12, borderRadius: 8, textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: "#4ade80" }}>
+                  {stats.games > 0 ? Math.round((stats.wins / stats.games) * 100) : 0}%
                 </div>
-              );
-            })}
+                <div style={{ fontSize: 10, color: "#666", marginTop: 4 }}>WIN RATE</div>
+              </div>
+              <div style={{ background: "#111118", padding: 12, borderRadius: 8, textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: "#60a5fa" }}>
+                  {stats.games > 0 && stats.wins > 0 ? (stats.guesses.reduce((a, b) => a + b, 0) / stats.wins).toFixed(1) : "–"}
+                </div>
+                <div style={{ fontSize: 10, color: "#666", marginTop: 4 }}>AVG GUESSES</div>
+              </div>
+            </div>
+
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#aaa", marginBottom: 8 }}>GUESS DISTRIBUTION</div>
+              {[1, 2, 3, 4, 5, 6].map(i => {
+                const count = stats.guesses[i - 1] || 0;
+                const maxCount = Math.max(...stats.guesses, 1);
+                const percent = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                return (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#aaa", width: 20 }}>{i}</span>
+                    <div style={{
+                      flex: 1, height: 20, background: "#1a1a1a", borderRadius: 4, overflow: "hidden"
+                    }}>
+                      <div style={{
+                        width: `${percent}%`, height: "100%",
+                        background: i === 1 ? "#4ade80" : i <= 3 ? "#60a5fa" : "#fb923c",
+                        transition: "width 0.3s"
+                      }} />
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#aaa", width: 20, textAlign: "right" }}>{count}</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
